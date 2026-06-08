@@ -13,7 +13,7 @@ updated: 2026-06-08
 | 檔案 | 內容 |
 |---|---|
 | [架構圖（主檔）](index.html) | 一張統一架構圖 + 可展開細節 + Phase 1 TODO（待解決問題清單） |
-| [術語表](glossary.md) | Edge / Persona / Soul / Skill / Personal-wiki 等核心名詞 |
+| [術語表](glossary.html) | Edge / Persona / Soul / Skill / Personal-wiki 等核心名詞 |
 | 本檔（moc.md） | 總覽入口 |
 
 ## Phase 1 核心理解
