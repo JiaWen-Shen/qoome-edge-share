@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<title>Qoome Edge Console — 架構圖</title>
+<style>
+  :root {
+    --bg: #fafaf9;
+    --card: #ffffff;
+    --line: #d6d3d1;
+    --line-strong: #78716c;
+    --text: #1c1917;
+    --muted: #57534e;
+    --accent: #0369a1;
+    --accent-bg: #e0f2fe;
+    --warn: #b45309;
+    --warn-bg: #fef3c7;
+    --gap: #be123c;
+    --gap-bg: #ffe4e6;
+    --done: #166534;
+    --done-bg: #dcfce7;
+    --shared: #7c3aed;
+    --shared-bg: #ede9fe;
+    --code-bg: #f5f5f4;
+    --edge-bg: #1c1917;
+    --edge-fg: #fafaf9;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "PingFang TC", "Noto Sans TC", sans-serif;
+    background: var(--bg); color: var(--text);
+    max-width: 1200px; margin: 0 auto; padding: 40px 28px 80px;
+    line-height: 1.55;
+  }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  .meta { color: var(--muted); font-size: 13px; margin-bottom: 36px; }
+  h2 {
+    font-size: 14px; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--muted);
+    margin: 44px 0 16px; padding-bottom: 6px;
+    border-bottom: 1px solid var(--line);
+  }
+  code {
+    font-family: ui-monospace, Menlo, monospace; font-size: 12px;
+    background: var(--code-bg); padding: 1px 5px; border-radius: 3px;
+  }
+  .note {
+    padding: 14px 18px; background: var(--code-bg);
+    border-left: 3px solid var(--accent); font-size: 13px;
+    color: var(--text); border-radius: 0 6px 6px 0;
+    max-width: 900px; margin: 16px auto;
+  }
+
+  /* ───── 主架構圖 ───── */
+  .arch {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 12px; padding: 28px 24px;
+    display: flex; flex-direction: column; gap: 22px;
+    margin-bottom: 16px;
+  }
+  /* Top row: Expert / Edge / End User 水平對齊 */
+  .arch-top {
+    display: grid;
+    grid-template-columns: 1fr auto 1.3fr auto 1fr;
+    gap: 12px;
+    align-items: center;
+  }
+  .arch-top .conn { align-self: center; }
+  /* Bottom: 從 Edge 中欄延伸出 chain，水平居中對齊 Edge */
+  .arch-bottom {
+    display: flex; flex-direction: column; gap: 6px;
+    align-items: stretch;
+    width: 100%; max-width: 380px;
+    margin: 0 auto;
+  }
+  .box {
+    background: var(--card); border: 2px solid var(--line);
+    border-radius: 10px; padding: 14px 16px;
+    position: relative;
+  }
+  .box-title { font-weight: 700; font-size: 15px; margin-bottom: 3px; }
+  .box-sub { font-size: 11px; color: var(--muted); line-height: 1.4; }
+  .box-tag {
+    display: inline-block; font-size: 9px; font-weight: 700;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    padding: 2px 6px; border-radius: 3px; margin-bottom: 6px;
+  }
+  .tag-actor { background: var(--accent-bg); color: var(--accent); }
+  .tag-enduser { background: var(--warn-bg); color: var(--warn); }
+  .tag-system { background: #e7e5e4; color: var(--muted); }
+  .tag-shared { background: var(--shared-bg); color: var(--shared); }
+  .box.actor-expert { border-color: var(--accent); }
+  .box.actor-enduser { border-color: var(--warn); }
+  .box.edge {
+    background: var(--edge-bg); color: var(--edge-fg);
+    border-color: var(--edge-bg);
+  }
+  .box.edge .box-sub { color: #a8a29e; }
+  .box.edge code { background: #44403c; color: var(--edge-fg); }
+  .box.shared {
+    border-color: var(--shared);
+    border-style: dashed;
+  }
+
+  /* connector labels */
+  .conn {
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; color: var(--text);
+    background: var(--bg); padding: 4px 10px;
+    border: 1px solid var(--line); border-radius: 14px;
+    width: fit-content; margin: 0 auto;
+    font-weight: 600;
+  }
+  .conn.input  { border-color: var(--accent); color: var(--accent); }
+  .conn.serve  { border-color: var(--warn); color: var(--warn); }
+  .conn.shared { border-color: var(--shared); color: var(--shared); }
+
+  .arrow-h {
+    text-align: center; color: var(--line-strong);
+    font-size: 18px; line-height: 1; user-select: none;
+    margin: -4px 0;
+  }
+
+  /* downstream chain inside arch-mid — 垂直由上往下 */
+  .chain {
+    display: flex; flex-direction: column;
+    gap: 6px; margin-top: 6px;
+  }
+  .chain-arrow {
+    text-align: center; color: var(--shared); font-size: 22px;
+    line-height: 1; font-weight: 700; user-select: none;
+  }
+
+  /* ───── details (點開展開) ───── */
+  details {
+    margin-top: 8px; font-size: 12px;
+    border-top: 1px dashed var(--line);
+    padding-top: 8px;
+  }
+  details summary {
+    cursor: pointer; color: var(--muted); font-size: 11px;
+    font-weight: 600; letter-spacing: 0.04em;
+    user-select: none;
+    list-style: none;
+  }
+  details summary::-webkit-details-marker { display: none; }
+  details summary::before {
+    content: "▸ "; color: var(--line-strong);
+    display: inline-block; transition: transform 0.15s;
+  }
+  details[open] summary::before { content: "▾ "; }
+  details summary:hover { color: var(--text); }
+  details .det-body {
+    margin-top: 8px; padding-left: 6px;
+    color: var(--text); font-size: 12px; line-height: 1.55;
+  }
+  .box.edge details { border-top-color: #44403c; }
+  .box.edge details summary { color: #a8a29e; }
+  .box.edge details summary:hover { color: var(--edge-fg); }
+  .box.edge details .det-body { color: var(--edge-fg); }
+
+  .det-body ul { margin: 4px 0 6px; padding-left: 18px; }
+  .det-body li { margin-bottom: 3px; }
+  .det-body strong { color: inherit; }
+
+  /* phase tags */
+  .pt {
+    display: inline-block; font-size: 9px; font-weight: 700;
+    padding: 1px 5px; border-radius: 3px; margin-left: 4px;
+    vertical-align: 1px;
+  }
+  .pt-p1 { background: var(--done-bg); color: var(--done); }
+  .pt-p2 { background: var(--gap-bg); color: var(--gap); }
+  .pt-gap { background: var(--gap-bg); color: var(--gap); }
+
+  /* ───── roles table ───── */
+  .roles-table {
+    width: 100%; max-width: 900px; margin: 16px auto 0;
+    border-collapse: collapse; font-size: 13px;
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 8px; overflow: hidden;
+  }
+  .roles-table th, .roles-table td {
+    padding: 11px 14px; text-align: left; vertical-align: top;
+    border-bottom: 1px solid var(--line);
+  }
+  .roles-table th {
+    background: var(--code-bg); font-size: 11px; font-weight: 700;
+    letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted);
+  }
+  .roles-table tr:last-child td { border-bottom: none; }
+  .roles-table .rn { font-weight: 700; font-size: 14px; }
+  .roles-table .rt {
+    display: block; font-size: 10px; font-weight: 500;
+    color: var(--muted); margin-top: 2px;
+  }
+  .roles-table ul { margin: 0; padding-left: 18px; }
+  .roles-table li { margin-bottom: 2px; }
+
+  /* ───── TODO list（跟 Iven 核對用）───── */
+  .todo {
+    list-style: none; padding: 0; margin: 16px auto 0;
+    max-width: 900px;
+  }
+  .todo > li {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 8px; padding: 14px 18px; margin-bottom: 10px;
+    border-left: 4px solid var(--line);
+  }
+  .todo > li.blocker { border-left-color: var(--gap); background: #fff5f5; }
+  .todo > li.gap     { border-left-color: var(--gap); }
+  .todo > li.warn    { border-left-color: var(--warn); }
+  .todo > li.misc    { border-left-color: var(--muted); }
+  .todo-head {
+    display: flex; align-items: flex-start; gap: 10px;
+    font-size: 14px;
+  }
+  .todo-head input[type="checkbox"] {
+    margin-top: 4px; flex-shrink: 0; cursor: pointer;
+    width: 14px; height: 14px;
+  }
+  .todo-head .todo-title { font-weight: 700; }
+  .todo-now {
+    margin: 6px 0 8px 26px;
+    font-size: 12px; color: var(--muted); line-height: 1.55;
+  }
+  .todo-now strong { color: var(--text); }
+  .todo-ask {
+    margin: 4px 0 0 26px;
+    background: var(--code-bg); border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 12px;
+  }
+  .todo-ask-title {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--accent); margin-bottom: 6px;
+  }
+  .todo-ask ul { margin: 0; padding-left: 18px; }
+  .todo-ask li { margin-bottom: 3px; line-height: 1.5; }
+  .todo-ask li::marker { color: var(--accent); }
+
+  .legend {
+    display: flex; gap: 18px; font-size: 11px; color: var(--muted);
+    margin-top: 12px; flex-wrap: wrap; justify-content: center;
+  }
+  .legend-item { display: flex; align-items: center; gap: 5px; }
+  .legend-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+</style>
+</head>
+<body>
+
+<h1>Qoome Edge Console — 架構圖</h1>
+<div class="meta">
+  2026-06-08 · Phase 1 探勘整合版 ·
+  <a href="moc.md">文件總覽</a> · <a href="glossary.md">術語表</a>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- §1 系統使用者角色（3 種人 + Admin 在側）-->
+<!-- ═══════════════════════════════════════ -->
+
+<h2>§1 · 系統使用者角色（3 種人）</h2>
+
+<p style="color: var(--muted); font-size: 12px; max-width: 900px; margin: 0 auto;">
+  下表 = <strong>系統使用者角色</strong>。Edge / Gateway / Skill 等內部系統元件請看下方架構圖。
+</p>
+
+<table class="roles-table">
+  <thead>
+    <tr>
+      <th style="width: 18%;">Role</th>
+      <th style="width: 36%;">Goal</th>
+      <th style="width: 46%;">Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>
+        <span class="rn" style="color: var(--accent);">Expert</span>
+        <span class="rt">醫師 / 知識工作者</span>
+      </td>
+      <td>
+        <ul>
+          <li>Input know-how / knowledge（餵自己的腦給 Edge）</li>
+          <li>Scale service（一個分身服務多個 end user）</li>
+        </ul>
+      </td>
+      <td>
+        <ul>
+          <li>填 Persona / 餵 Personal-wiki <span class="pt pt-p1">P1</span></li>
+          <li>簽核 Edge 草擬的文章 <span class="pt pt-p1">P1</span></li>
+          <li>LINE chat 跟 Edge 對話、下指示 <span class="pt pt-p2">P2</span></li>
+        </ul>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <span class="rn" style="color: var(--warn);">End User</span>
+        <span class="rt">顧客 / 讀者 / 病人</span>
+      </td>
+      <td>
+        <ul>
+          <li>On-time service</li>
+          <li>Personalized service</li>
+        </ul>
+      </td>
+      <td>
+        <ul>
+          <li>Read articles（LINE OA / FB / WordPress）<span class="pt pt-p1">P1</span></li>
+          <li>Chat LINE bot 跟 Edge 對話 <span class="pt pt-p2">P2</span></li>
+        </ul>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <span class="rn" style="color: var(--muted);">Admin</span>
+        <span class="rt">platform ops（Iven / 未來公司）</span>
+      </td>
+      <td>
+        <ul>
+          <li>Maintenance（平台維運、deploy）</li>
+          <li>Track usage（用量監控 / 計費 / 健康度）</li>
+        </ul>
+      </td>
+      <td>
+        <ul>
+          <li>Push deploy（Zeabur / CF Workers）</li>
+          <li>開新 Edge 帳號（P1 手動，P2 自助?）</li>
+          <li>監控 Gateway / Skill / Edge runtime 健康度</li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- §2 主架構圖 -->
+<!-- ═══════════════════════════════════════ -->
+
+<h2>§2 · 主架構圖（點任一元件展開細節）</h2>
+
+<div class="arch">
+
+  <!-- Top row: Expert / Edge / End User 三者水平對齊 -->
+  <div class="arch-top">
+
+    <!-- Expert (左) -->
+    <div class="box actor-expert">
+      <span class="box-tag tag-actor">actor</span>
+      <div class="box-title">👨‍⚕️ Expert</div>
+      <div class="box-sub">醫師 / 知識工作者<br>dr-lin, dr-norman, dr-ben...</div>
+
+      <details>
+        <summary>互動介面 + 細節</summary>
+        <div class="det-body">
+          <strong>介面：</strong>
+          <ul>
+            <li>Web = <strong>Edge Console</strong> <span class="pt pt-p1">P1 主</span></li>
+            <li>LINE chat <span class="pt pt-p2">P2 主（信條 #4 Headless）</span></li>
+          </ul>
+          <strong>Edge Console 6 tabs：</strong>
+          <ul>
+            <li>topics · articles · <strong>personas (profile/persona)</strong></li>
+            <li>librarian · reports · <strong>settings (LINE/FB/WP)</strong></li>
+          </ul>
+          <strong>對 Edge 的關係：</strong>
+          <ul>
+            <li><strong>train 1:1</strong>：一位 expert ↔ 一隻 Edge，灌 Persona / Soul / Personal-wiki</li>
+          </ul>
+        </div>
+      </details>
+    </div>
+
+    <!-- Expert → Edge connector -->
+    <div class="conn input">input · train <strong>1:1</strong> ▶</div>
+
+    <!-- Edge (中) -->
+    <div class="box edge">
+      <span class="box-tag" style="background: #44403c; color: #e7e5e4;">internal system</span>
+      <div class="box-title">🤖 Edge（AI Agent Runtime）</div>
+      <div class="box-sub">
+        每位 expert 一個專屬 AI agent，吸收 expert know-how 後對外 scale 服務 end user<br>
+        <code>qoome-edge-agent</code> · Hermes-based · 部署 CF Worker / VPS (TBD)
+      </div>
+
+      <details>
+        <summary>Edge 內部分層 + 1:1 vs shared 細節</summary>
+        <div class="det-body">
+          <strong>每位 expert 的 Edge 含什麼（1:1 私有）：</strong>
+          <ul>
+            <li><strong>Persona / Soul</strong>：人設、口吻、立場 — 越用越像本人（信條 #1）</li>
+            <li><strong>Personal-wiki</strong>：expert 自己的筆記庫（每 Edge 一個 GitHub repo，參考 Obsidian 模式）</li>
+            <li><strong>private_library_id</strong>：私有知識庫</li>
+            <li><strong>channels settings</strong>：LINE OA / FB / WordPress 各自帳號 credentials</li>
+          </ul>
+          <strong>多 Edge 共用（shared 層）：</strong>
+          <ul>
+            <li><strong>shared_libraries</strong>：醫療通用知識庫</li>
+            <li><strong>Chatflow / Skill template</strong>：林/鄭/凌越 Intake 邏輯共用 Dify chatflow，呼叫時注入 Edge identity</li>
+          </ul>
+          <strong>Edge 的職責（信條 #3）：</strong>
+          <ul>
+            <li>腦/策略 = intent recognition + skill selection</li>
+            <li>呼 Gateway 執行（手）</li>
+          </ul>
+        </div>
+      </details>
+    </div>
+
+    <!-- Edge → End User connector -->
+    <div class="conn serve" title="end user 跨多 Edge 訂閱時整體呈 N:N">
+      serve · output <strong>1:N</strong> ▶
+    </div>
+
+    <!-- End User (右) -->
+    <div class="box actor-enduser">
+      <span class="box-tag tag-enduser">actor</span>
+      <div class="box-title">👥 End User</div>
+      <div class="box-sub">顧客 / 讀者 / 病人</div>
+
+      <details>
+        <summary>對外 output 通路</summary>
+        <div class="det-body">
+          <strong>Phase 1（outbound 單向）：</strong>
+          <ul>
+            <li><strong>LINE OA</strong>：broadcast / push 文章</li>
+            <li><strong>Facebook</strong>（透過 Late.io）</li>
+            <li><strong>WordPress</strong>：醫師對外 site（如 <a href="https://my18.cc">my18.cc</a>）</li>
+          </ul>
+          <strong>Phase 2（inbound 雙向）：</strong>
+          <ul>
+            <li><strong>LINE chat bot</strong>：跟 Edge 對話（信條 #4 Headless 主介面）</li>
+          </ul>
+          <strong>跟 Edge 的關係：</strong>
+          <ul>
+            <li><strong>1 Edge ↔ N end user</strong>（單 Edge 視角）</li>
+            <li>end user 也可訂閱多醫師 OA → 整體跨 Edge 呈 N:N</li>
+          </ul>
+        </div>
+      </details>
+    </div>
+
+  </div>  <!-- /arch-top -->
+
+
+  <!-- Bottom: Edge 中欄向下延伸 chain（垂直 Gateway → Skills → DB） -->
+  <div class="arch-bottom">
+    <div class="conn shared">↓ call · <strong>多 Edge shared</strong></div>
+    <div class="chain">
+      <div class="box shared">
+        <span class="box-tag tag-shared">shared</span>
+        <div class="box-title">Gateway</div>
+        <div class="box-sub">Cloudflare Worker · 服務網格</div>
+        <details>
+          <summary>2 個 API namespace</summary>
+          <div class="det-body">
+            <strong><code>/api/v1/edge/*</code></strong> — CRUD：personas · topics · articles · reports · librarian · clients · config<br>
+            <strong><code>/api/v1/studio/*</code></strong> — 工作流：articles/generate · topics/{suggest,evaluate,paa-expand} · keywords/extract · images/upload · social/{publish,wp-publish}<br>
+            <em>repo: <code>qoome-gateway</code>，Iven 端維護</em>
+          </div>
+        </details>
+      </div>
+      <div class="chain-arrow">↓</div>
+      <div class="box shared">
+        <span class="box-tag tag-shared">shared</span>
+        <div class="box-title">MCP / Skills</div>
+        <div class="box-sub">三大 Skill (MCP servers)</div>
+        <details>
+          <summary>三大 Skill 狀態</summary>
+          <div class="det-body">
+            <ul>
+              <li><strong>Content Factory</strong> ✅ expose（<code>/studio</code>）</li>
+              <li><strong>Librarian</strong> ✅ expose（<code>/edge/librarian</code>）</li>
+              <li><strong>Intake / nuwa</strong> <span class="pt pt-gap">缺</span>（Phase 1 重點，Iven 後端尚未 expose）</li>
+            </ul>
+            <em>Skill = MCP server，「給 Edge 看的使用指南」與「對 Edge 黑盒實作」分離（信條 #3）</em>
+          </div>
+        </details>
+      </div>
+      <div class="chain-arrow">↓</div>
+      <div class="box shared">
+        <span class="box-tag tag-shared">shared</span>
+        <div class="box-title">DB（Supabase）</div>
+        <div class="box-sub">PostgreSQL + Auth · 一庫多租戶</div>
+        <details>
+          <summary>多租戶隔離方式</summary>
+          <div class="det-body">
+            <strong>schema-level multi-tenant（不是物理分庫）</strong><br>
+            每筆資料用 <code>client_id</code> 隔離；RLS 政策確保 Edge 只看自己的資料。<br><br>
+            <strong>主要表：</strong>
+            <ul>
+              <li><code>clients</code>（= Edges）· <code>personas</code> · <code>topics</code> · <code>articles</code></li>
+              <li><code>documents</code>（含 <code>client_id IS NULL</code> = 全域共用平台級資產）</li>
+              <li><code>associations</code> / <code>association_clients</code>（未來醫師聯合的伏筆）</li>
+            </ul>
+            ⚠️ Edge Console 直連 Supabase 只用於 Notion sync + SSR；RLS 隔離資料一律走 Gateway
+          </div>
+        </details>
+      </div>
+    </div>  <!-- /chain -->
+  </div>  <!-- /arch-bottom -->
+
+</div>  <!-- /arch -->
+
+
+<div class="legend">
+  <div class="legend-item"><span class="legend-dot" style="background: var(--accent);"></span> Expert flow（input · train 1:1）</div>
+  <div class="legend-item"><span class="legend-dot" style="background: var(--warn);"></span> End User flow（serve 1:N）</div>
+  <div class="legend-item"><span class="legend-dot" style="background: var(--shared);"></span> Shared system（多 Edge 共用，by client_id 隔離）</div>
+  <div class="legend-item"><span class="legend-dot" style="background: var(--edge-bg);"></span> Internal system（Edge 是核心 AI agent，不是 role）</div>
+</div>
+
+<div class="note" style="border-left-color: var(--gap); margin-top: 24px;">
+  <strong>四句話記住：</strong><br>
+  ① 系統使用者 <strong>3 種角色</strong>：Expert · End User · Admin<br>
+  ② Edge = <strong>每位 expert 一個專屬 AI agent</strong>，吸收 expert know-how 後對外 scale 服務 end user（train 1:1，serve 1:N）<br>
+  ③ Phase 1：expert 走 Console 管 Edge、end user 走「單向收文章」；Phase 2：雙方都走 LINE chat 跟 Edge 對話<br>
+  ④ Gateway / Skills / DB 是 <strong>多 Edge shared 基礎設施</strong>（schema-level multi-tenant，by <code>client_id</code> 隔離）
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- §3 Phase 1 三大功能 vs 現況 -->
+<!-- ═══════════════════════════════════════ -->
+
+<h2>§3 · Phase 1 TODO (to Iven)</h2>
+
+<p style="color: var(--muted); font-size: 12px; max-width: 900px; margin: 0 auto;">
+  每條 TODO 標出「<strong>現況</strong>」+「<strong>待解決問題</strong>」。打勾代表已對齊；展開看細節。
+</p>
+
+<ul class="todo">
+
+  <!-- BLOCKER: dev secrets -->
+  <li class="blocker">
+    <div class="todo-head">
+      <input type="checkbox" id="t-blocker">
+      <label for="t-blocker" class="todo-title">🔴 BLOCKER：拿 dev <code>.env.local</code> 兩把 Supabase key</label>
+    </div>
+    <div class="todo-now">
+      <strong>現況：</strong>本機 <code>~/Jottacloud/Projects/qoome/qoome-content-factory/</code> 沒 <code>.env.local</code>，<code>npm run dev</code> 起不來
+    </div>
+    <div class="todo-ask">
+      <div class="todo-ask-title">待解決問題</div>
+      <ul>
+        <li>dev 用的 <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code> 從哪拿？（共用 prod or dev 獨立？）</li>
+        <li>SSR 用的 <code>SUPABASE_SERVICE_KEY</code>（service role）給我嗎？還是 dev 不需要 SSR /report?</li>
+      </ul>
+    </div>
+  </li>
+
+  <!-- ① Persona / Soul -->
+  <li class="gap">
+    <div class="todo-head">
+      <input type="checkbox" id="t-persona">
+      <label for="t-persona" class="todo-title">① Persona / Soul 提取 UI <span class="pt pt-gap">缺工作流</span></label>
+    </div>
+    <div class="todo-now">
+      <strong>現況：</strong>PersonasPage 只能手填（6 basic + 7 tag + prompt + 6 JSONB 進階）；
+      Gateway 沒有 <code>/intake/*</code> endpoint，Intake / nuwa skill 尚未 expose
+    </div>
+    <div class="todo-ask">
+      <div class="todo-ask-title">待解決問題</div>
+      <ul>
+        <li>Persona vs Soul 的資料模型差別？是兩張表還是一張表兩 column？</li>
+        <li>一個 Edge 可有多個 persona（同醫師不同社群帳號）嗎？schema 看起來支援（PersonasPage 是 list），但 active 是 1 個？</li>
+        <li><code>currentEdge.config</code> 完整 schema？persona/soul 是 reference id 還是 inline？</li>
+      </ul>
+    </div>
+  </li>
+
+  <!-- ② LINE / FB -->
+  <li class="warn">
+    <div class="todo-head">
+      <input type="checkbox" id="t-channels">
+      <label for="t-channels" class="todo-title">② LINE OA / FB 帳號設定 <span class="pt pt-p1" style="background: var(--warn-bg); color: var(--warn);">schema 有，UX 太工程</span></label>
+    </div>
+    <div class="todo-now">
+      <strong>現況：</strong>SettingsPage 已有 LINE Messaging API（channel_access_token + secret + oa_name）/
+      Facebook 走 Late.io（late_profile_id + late_account_id）/ WordPress（site_url + auth_header）三個 channel section<br>
+      但醫師視角太硬，要手填 Channel Secret / Late ID
+    </div>
+    <div class="todo-ask">
+      <div class="todo-ask-title">待解決問題</div>
+      <ul>
+        <li><strong>FB 走 Late.io 是 Phase 1 要保留的嗎？</strong>還是要切回直連 FB OAuth？（影響 UX 大方向）</li>
+        <li>LINE channel credentials 後端怎麼加密儲存？目前 schema <code>type: 'secret'</code> 但 client 端是明傳 patch — 安全嗎？</li>
+        <li>LINE OA「自家 vs 平台共用」：每位 expert 自己的 OA 還是 Qoome 平台共用 OA?</li>
+        <li>串完 LINE OA 後文章怎麼 push 出去？Edge Console 直發 / Gateway 代發 / n8n 中繼？</li>
+      </ul>
+    </div>
+  </li>
+
+  <!-- ③ Personal-wiki -->
+  <li class="gap">
+    <div class="todo-head">
+      <input type="checkbox" id="t-wiki">
+      <label for="t-wiki" class="todo-title">③ Personal-wiki + 醫師 onboarding <span class="pt pt-gap">完全沒有</span></label>
+    </div>
+    <div class="todo-now">
+      <strong>現況：</strong>無對應 tab / 表 / endpoint；
+      CLAUDE.md 寫「HTP 個人筆記，每 Edge 一個 GitHub repo，參考 Obsidian 模式」但 code 端尚未實作
+    </div>
+    <div class="todo-ask">
+      <div class="todo-ask-title">待解決問題</div>
+      <ul>
+        <li><strong>這應該是我（Karen）要規劃的對嗎？</strong>（先確認 ownership，再展開細節）</li>
+        <li><strong>形式：</strong>Markdown editor / 上傳檔案 / 同步 Obsidian / Notion 連接 / GitHub repo per Edge？</li>
+        <li><strong>存哪：</strong>Supabase table（per-tenant 隔離）/ 外部 storage / GitHub repo？</li>
+        <li><strong>怎麼餵 nuwa：</strong>整份 dump / RAG / 標籤過濾？</li>
+        <li>Personal-wiki tab 加在 Console 哪？或塞 Persona 底下？</li>
+        <li><strong>醫師 onboarding flow：</strong>Phase 1 要做 multi-tenant 自助開戶嗎？brief 寫「手動開帳號」→ 自助先不做？</li>
+      </ul>
+    </div>
+  </li>
+
+  <!-- ④ 範圍 / 跨 repo -->
+  <li class="misc">
+    <div class="todo-head">
+      <input type="checkbox" id="t-scope">
+      <label for="t-scope" class="todo-title">④ 範圍 / 跨 repo 對齊</label>
+    </div>
+    <div class="todo-now">
+      <strong>現況：</strong>沒明確 deadline；Iven 後端解耦中（Intake / nuwa skill 還在動）；dr-ben 角色定位待釐清
+    </div>
+    <div class="todo-ask">
+      <div class="todo-ask-title">待解決問題</div>
+      <ul>
+        <li>Phase 1 完工有 deadline 嗎？</li>
+        <li>dr-ben 的「平台 AI 醫師預設人設」要納入 Phase 1 設計嗎？還是只做給真醫師（dr-lin / dr-norman）用？</li>
+        <li>Gateway 端 Skill 解耦進度？我幾號可以開始假設「persona/intake/librarian methodology 可注入」是 ready 的？</li>
+        <li>s30-r14 v0.6 折修完，會不會影響 Edge Console 設計？Intake 系 Skill 要不要先別假設 stable？</li>
+      </ul>
+    </div>
+  </li>
+
+</ul>
+
+</body>
+</html>
