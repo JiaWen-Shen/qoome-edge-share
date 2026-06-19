@@ -245,14 +245,67 @@
   }
   .legend-item { display: flex; align-items: center; gap: 5px; }
   .legend-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+
+  /* ───── 2026-06-19 catch-up: del / ins / answer / banner ───── */
+  del {
+    color: var(--muted); text-decoration: line-through;
+    text-decoration-color: var(--gap); text-decoration-thickness: 1.5px;
+  }
+  ins {
+    background: var(--done-bg); color: var(--done);
+    text-decoration: none; padding: 0 3px; border-radius: 2px;
+    font-weight: 600;
+  }
+  .chain > ins {
+    display: contents;
+    background: transparent; padding: 0;
+  }
+  .box.edge ins { background: #14532d; color: #d1fae5; }
+  .answer {
+    margin-top: 8px; padding: 8px 12px;
+    background: var(--done-bg); border-left: 3px solid var(--done);
+    border-radius: 0 4px 4px 0; font-size: 12px; color: var(--done);
+  }
+  .answer-title {
+    font-size: 9px; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; margin-bottom: 4px;
+  }
+  .answer ul { margin: 2px 0 0; padding-left: 16px; }
+  .answer li { margin-bottom: 2px; color: var(--text); }
+  .answer li::marker { color: var(--done); }
+  .update-banner {
+    background: var(--accent-bg); border-left: 4px solid var(--accent);
+    padding: 12px 16px; margin: 0 0 24px; border-radius: 0 6px 6px 0;
+    font-size: 13px; color: var(--text);
+  }
+  .update-banner strong { color: var(--accent); }
+  .pt-done { background: var(--done-bg); color: var(--done); }
+  .pt-deferred { background: #f1f5f9; color: #475569; }
+  .new-todo {
+    margin-top: 20px; padding: 14px 18px;
+    background: #f0f9ff; border: 1px dashed var(--accent);
+    border-radius: 8px;
+  }
+  .new-todo-title {
+    font-size: 12px; font-weight: 700; color: var(--accent);
+    margin-bottom: 8px;
+  }
+  .new-todo ol { margin: 0; padding-left: 20px; font-size: 12px; }
+  .new-todo li { margin-bottom: 4px; }
 </style>
 </head>
 <body>
 
 <h1>Qoome Edge Console — 架構圖</h1>
 <div class="meta">
-  2026-06-08 · Phase 1 探勘整合版 ·
-  <a href="moc.html">文件總覽</a> · <a href="glossary.html">術語表</a>
+  2026-06-08 初版 · <strong>2026-06-19 catch-up 更新</strong> ·
+  <a href="moc.html">文件總覽</a> · <a href="glossary.html">術語表</a> · <a href="catch-up-2026-06-19.html">本次更新筆記</a>
+</div>
+
+<div class="update-banner">
+  <strong>📌 2026-06-19 catch-up</strong>：Iven 6/10 Teams briefing + 6/19 commits（LINE OA T1-T6 + campaign T5 JWT verify）回灌。
+  <strong>理解層</strong>修正用 <del>刪節線</del> + <ins>新版</ins> 對照；<strong>TODO 答案</strong>直接以綠框「Iven 答覆」block 附在原問題下，checkbox 反映現況。
+  原文保留可回溯。
 </div>
 
 <!-- ═══════════════════════════════════════ -->
@@ -377,10 +430,12 @@
     <!-- Edge (中) -->
     <div class="box edge">
       <span class="box-tag" style="background: #44403c; color: #e7e5e4;">internal system</span>
-      <div class="box-title">🤖 Edge（AI Agent Runtime）</div>
+      <div class="box-title">🤖 Edge<del>（AI Agent Runtime）</del> <ins>（Phase 1 = Console + Skill 編排；Phase 2 才升 Runtime）</ins></div>
       <div class="box-sub">
         每位 expert 一個專屬 AI agent，吸收 expert know-how 後對外 scale 服務 end user<br>
-        <code>qoome-edge-agent</code> · Hermes-based · 部署 CF Worker / VPS (TBD)
+        <del><code>qoome-edge-agent</code> · Hermes-based · 部署 CF Worker / VPS (TBD)</del><br>
+        <ins>Phase 1 = <code>qoome-content-factory</code> (Next.js @ Zeabur) + Gateway 呼 Skill；Phase 2 才接 <code>qoome-edge-agent</code> (Hermes-based runtime)</ins><br>
+        <strong>實例</strong>：dr-lin / dr-norman（真醫師上線）<ins>· dr-ben（平台自家 demo Edge，Iven 控制，每天發文 + Intake demo）· Karen-own 醫美 Edge (my18.cc) ← Iven 鼓勵的 dogfood</ins>
       </div>
 
       <details>
@@ -388,19 +443,25 @@
         <div class="det-body">
           <strong>每位 expert 的 Edge 含什麼（1:1 私有）：</strong>
           <ul>
-            <li><strong>Persona / Soul</strong>：人設、口吻、立場 — 越用越像本人（信條 #1）</li>
-            <li><strong>Personal-wiki</strong>：expert 自己的筆記庫（每 Edge 一個 GitHub repo，參考 Obsidian 模式）</li>
-            <li><strong>private_library_id</strong>：私有知識庫</li>
-            <li><strong>channels settings</strong>：LINE OA / FB / WordPress 各自帳號 credentials</li>
+            <li><strong>Persona / Soul</strong>：人設、口吻、立場 — 越用越像本人（信條 #1）<ins>。<strong>Phase 1 deferred</strong>：Iven 6/10 明示「等 nuwa 工具 ready 再重新提取」</ins></li>
+            <li><strong>Personal-wiki</strong>：expert 自己的筆記庫（每 Edge 一個 GitHub repo，<del>參考 Obsidian 模式</del> <ins>依 Karpathy「檔案 + 連結」說法不裝 Obsidian；user 想 UI 管自己 add 外部 vault</ins>）<ins>· <strong>Karen full ownership</strong></ins></li>
+            <li><del><strong>private_library_id</strong>：私有知識庫</del></li>
+            <li><strong>channels settings</strong>：LINE OA / FB / WordPress 各自帳號 credentials<ins>。<strong>加密邊界 (T6 6/19)</strong>：真值放 Gateway DB (Supabase)，Edge Console 只 UI；GET <code>/config</code> auto-redact 成 <code>__REDACTED__</code>，PATCH 收到 sentinel 還原現值（避免 round-trip 洗掉 secret）</ins></li>
           </ul>
-          <strong>多 Edge 共用（shared 層）：</strong>
+          <strong><del>多 Edge 共用（shared 層）：</del><ins>Knowledge 4 分類（Iven 6/10）：</ins></strong>
           <ul>
-            <li><strong>shared_libraries</strong>：醫療通用知識庫</li>
-            <li><strong>Chatflow / Skill template</strong>：林/鄭/凌越 Intake 邏輯共用 Dify chatflow，呼叫時注入 Edge identity</li>
+            <li><del><strong>shared_libraries</strong>：醫療通用知識庫</del></li>
+            <li><ins><strong>① Librarian-Global</strong>：平台放入的醫學教科書，可開放 Edge user 訂閱（多 Edge shared）</ins></li>
+            <li><ins><strong>② Librarian-Private</strong>：Edge user 自上傳教科書 / 自著作（1:1 私有）</ins></li>
+            <li><ins><strong>③ Methodology</strong>：之前 Gemini ETL Europaem 問診方法論；現在考慮用 nuwa 取代（很多醫師有自己一套：書 / Word 表格 / 文章）<strong>← 之前漏的獨立類</strong></ins></li>
+            <li><ins><strong>④ Personal-wiki</strong>：高變動，每 Edge 一個 GitHub repo（見上）</ins></li>
+            <li><del><strong>Chatflow / Skill template</strong>：林/鄭/凌越 Intake 邏輯共用 Dify chatflow，呼叫時注入 Edge identity</del> <ins><strong>Chatflow / Skill template</strong>：林/鄭/凌越 Intake 邏輯共用 LangGraph chatflow（<code>qoome-campaign</code>，Dify ⚠️ DEPRECATED 遷移中），呼叫時注入 <strong>tenant identity (T5 6/19: JWKS ES256 JWT verify)</strong></ins></li>
           </ul>
           <strong>Edge 的職責（信條 #3）：</strong>
           <ul>
-            <li>腦/策略 = intent recognition + skill selection</li>
+            <li><del>腦/策略 = intent recognition + skill selection</del></li>
+            <li><ins><strong>Phase 1：「腦」在 Skill 內</strong>（Intake LangGraph + n8n channel core）；Edge Console 主要負責管 Persona / Channels / Knowledge → Skill 編排靠 Gateway routing</ins></li>
+            <li><ins><strong>Phase 2：腦回到 Edge runtime</strong>（Hermes Agentic）— intent recognition + skill selection 才在 Edge 端做</ins></li>
             <li>呼 Gateway 執行（手）</li>
           </ul>
         </div>
@@ -419,17 +480,19 @@
       <div class="box-sub">顧客 / 讀者 / 病人</div>
 
       <details>
-        <summary>對外 output 通路</summary>
+        <summary>對外 output 通路 + inbound chain</summary>
         <div class="det-body">
-          <strong>Phase 1（outbound 單向）：</strong>
+          <strong>Outbound 發文章：</strong>
           <ul>
-            <li><strong>LINE OA</strong>：broadcast / push 文章</li>
-            <li><strong>Facebook</strong>（透過 Late.io）</li>
-            <li><strong>WordPress</strong>：醫師對外 site（如 <a href="https://my18.cc">my18.cc</a>）</li>
+            <li><strong>LINE OA</strong>：broadcast / push 文章（直發）</li>
+            <li><strong>Facebook / IG / 其他 social</strong>：透過 <strong>Late.io 統一閘道</strong> <ins>（Iven 6/10 P1 已定：不寫 N 個 adapter，避開 FB token 限時麻煩）</ins></li>
+            <li><strong>WordPress</strong>：醫師對外 site（如 <a href="https://my18.cc">my18.cc</a>）直發</li>
+            <li><ins><strong>發文呼叫路徑</strong>：Edge Console → Gateway → <strong>Social Media Publisher Skill (n8n 已寫好)</strong></ins></li>
           </ul>
-          <strong>Phase 2（inbound 雙向）：</strong>
+          <strong><del>Phase 2（inbound 雙向）：</del><ins>Inbound 跟 Edge 對話：</ins></strong>
           <ul>
-            <li><strong>LINE chat bot</strong>：跟 Edge 對話（信條 #4 Headless 主介面）</li>
+            <li><ins><strong>Phase 1（已 active）</strong>：dr-lin / dr-norman / dr-ben 的 LINE OA 串 <strong>Intake chatbot Agent</strong> → 病人 LINE 訊息走 Gateway <code>lineWebhook</code> → <code>lineResolver</code> 解 tenant → 鑄 JWT → 進 Intake skill（6/19 T1-T5 落地）</ins></li>
+            <li><del><strong>LINE chat bot</strong>：跟 Edge 對話（信條 #4 Headless 主介面）</del> <ins><strong>Phase 2</strong>：Hermes 接醫師自己的 Line（不是 OA）→ 醫師跟 Edge 私下對話下指示（信條 #4 Headless）</ins></li>
           </ul>
           <strong>跟 Edge 的關係：</strong>
           <ul>
@@ -450,17 +513,37 @@
       <div class="box shared">
         <span class="box-tag tag-shared">shared</span>
         <div class="box-title">Gateway</div>
-        <div class="box-sub">Cloudflare Worker · 服務網格</div>
+        <div class="box-sub">Cloudflare Worker · 服務網格 · PEP（驗 JWT + tenant 注入）</div>
         <details>
-          <summary>2 個 API namespace</summary>
+          <summary><del>2</del> <ins>4</ins> 個 API namespace</summary>
           <div class="det-body">
-            <strong><code>/api/v1/edge/*</code></strong> — CRUD：personas · topics · articles · reports · librarian · clients · config<br>
+            <strong><code>/api/v1/edge/*</code></strong> — CRUD：personas · topics · articles · reports · librarian · clients · config <ins>（GET 對 secret auto-redact / PATCH 用 sentinel 還原，T6 6/19）</ins><br>
             <strong><code>/api/v1/studio/*</code></strong> — 工作流：articles/generate · topics/{suggest,evaluate,paa-expand} · keywords/extract · images/upload · social/{publish,wp-publish}<br>
-            <em>repo: <code>qoome-gateway</code>，Iven 端維護</em>
+            <ins><strong><code>/api/v1/intake/*</code></strong> — Skill proxy：body.tenant_id 必須匹配驗過的 JWT tenant，不符 403（T4 6/19）</ins><br>
+            <ins><strong><code>/api/v1/line/{reply, push, loading}</code></strong> — LINE reply API（T2 6/19，ADR-LINE-002 Option C）</ins><br>
+            <em>repo: <code>qoome-gateway</code>，Iven 端維護</em><br>
+            <ins><em>+ <code>lineResolver</code>（webhook destination → tenant lookup, Cache TTL 300s）/ <code>edgeAuthClient</code>（鑄租戶 JWT seam）兩個 6/19 新元件</em></ins>
           </div>
         </details>
       </div>
       <div class="chain-arrow">↓</div>
+      <ins>
+      <div class="box shared">
+        <span class="box-tag tag-shared">shared</span>
+        <div class="box-title">Edge Auth <span class="pt pt-done">新增 (catch-up)</span></div>
+        <div class="box-sub">Cloudflare Worker · Token Issuer（tenant_id → Supabase ES256 JWT）</div>
+        <details>
+          <summary>Edge Auth 細節（之前漏畫的元件）</summary>
+          <div class="det-body">
+            <strong>repo</strong>：<code>qoome-edge-auth</code>（MASTER-SYSTEM-MAP §3 第 2 元件）<br>
+            <strong>用途</strong>：password grant + 共享密鑰 → 為 tenant 鑄 Supabase ES256 JWT<br>
+            <strong>呼叫方</strong>：n8n / Gateway 內 <code>edgeAuthClient</code>（6/19 T1 新加）<br>
+            <strong>驗證方</strong>：Skill 端 <code>jwt_verify.py</code> JWKS ES256（6/19 T5 新加）→ <code>effective_tenant</code> 從 token 取
+          </div>
+        </details>
+      </div>
+      <div class="chain-arrow">↓</div>
+      </ins>
       <div class="box shared">
         <span class="box-tag tag-shared">shared</span>
         <div class="box-title">MCP / Skills</div>
@@ -471,9 +554,11 @@
             <ul>
               <li><strong>Content Factory</strong> ✅ expose（<code>/studio</code>）</li>
               <li><strong>Librarian</strong> ✅ expose（<code>/edge/librarian</code>）</li>
-              <li><strong>Intake / nuwa</strong> <span class="pt pt-gap">缺</span>（Phase 1 重點，Iven 後端尚未 expose）</li>
+              <li><del><strong>Intake / nuwa</strong> <span class="pt pt-gap">缺</span>（Phase 1 重點，Iven 後端尚未 expose）</del> <ins><strong>Intake</strong> <span class="pt pt-done">✅ expose</span>（<code>/intake</code>，6/19 T4 Gateway + T5 campaign JWT verify 落地；<code>qoome-campaign</code> = FastAPI + LangGraph）</ins></li>
+              <li><ins><strong>nuwa</strong> <span class="pt pt-gap">缺</span> — persona / skill extraction 工具（不同於 Intake），Iven 6/10 提到要用來取代之前 Gemini ETL 的 methodology 注入</ins></li>
             </ul>
-            <em>Skill = MCP server，「給 Edge 看的使用指南」與「對 Edge 黑盒實作」分離（信條 #3）</em>
+            <em>Skill = MCP server，「給 Edge 看的使用指南」與「對 Edge 黑盒實作」分離（信條 #3）</em><br>
+            <ins><em>⚠️ <del>Dify</del> ⚠️ DEPRECATED 遷移中（MASTER-SYSTEM-MAP §3）→ Intake 已改 LangGraph</em></ins>
           </div>
         </details>
       </div>
@@ -493,7 +578,8 @@
               <li><code>documents</code>（含 <code>client_id IS NULL</code> = 全域共用平台級資產）</li>
               <li><code>associations</code> / <code>association_clients</code>（未來醫師聯合的伏筆）</li>
             </ul>
-            ⚠️ Edge Console 直連 Supabase 只用於 Notion sync + SSR；RLS 隔離資料一律走 Gateway
+            ⚠️ Edge Console 直連 Supabase 只用於 Notion sync + SSR；RLS 隔離資料一律走 Gateway<br>
+            <ins>⚠️ <strong>anon-key path 剝離中</strong>（s29-r1-a1 sprint task）→ 未來 Console 完全不直連 Supabase，全走 Gateway</ins>
           </div>
         </details>
       </div>
@@ -513,9 +599,12 @@
 <div class="note" style="border-left-color: var(--gap); margin-top: 24px;">
   <strong>四句話記住：</strong><br>
   ① 系統使用者 <strong>3 種角色</strong>：Expert · End User · Admin<br>
-  ② Edge = <strong>每位 expert 一個專屬 AI agent</strong>，吸收 expert know-how 後對外 scale 服務 end user（train 1:1，serve 1:N）<br>
-  ③ Phase 1：expert 走 Console 管 Edge、end user 走「單向收文章」；Phase 2：雙方都走 LINE chat 跟 Edge 對話<br>
-  ④ Gateway / Skills / DB 是 <strong>多 Edge shared 基礎設施</strong>（schema-level multi-tenant，by <code>client_id</code> 隔離）
+  ② Edge = <strong>每位 expert 一個專屬 AI agent</strong>，吸收 expert know-how 後對外 scale 服務 end user（train 1:1，serve 1:N）<ins>。<strong>Phase 1 Edge = Edge Console (Next.js) + Gateway 呼 Skill</strong>；Phase 2 才升 Hermes Agentic runtime</ins><br>
+  ③ <del>Phase 1：expert 走 Console 管 Edge、end user 走「單向收文章」；Phase 2：雙方都走 LINE chat 跟 Edge 對話</del><br>
+  <ins>③ <strong>Phase 1 已 active</strong>：expert 走 Console 管 Edge；end user 走「outbound 收文章」+「inbound LINE OA 對 Intake chatbot」（dr-lin 6/19 已通）。<strong>Phase 2</strong>：醫師自己的 Line 接 Hermes 私下對話</ins><br>
+  ④ <del>Gateway / Skills / DB 是 <strong>多 Edge shared 基礎設施</strong>（schema-level multi-tenant，by <code>client_id</code> 隔離）</del><br>
+  <ins>④ <strong>Gateway / Edge Auth / Skills / DB</strong> 是多 Edge shared 基礎設施（schema-level multi-tenant，by <code>client_id</code> 隔離；<strong>tenant identity 全程靠 JWT 攜帶</strong>，body 不可信）</ins><br>
+  <ins>⑤ <strong>Knowledge 4 分類</strong>：Librarian-Global（可訂閱）/ Librarian-Private（自上傳）/ Methodology（nuwa 取代 ETL）/ Personal-wiki（GitHub repo per Edge，Karen 主導）</ins>
 </div>
 
 <!-- ═══════════════════════════════════════ -->
@@ -525,7 +614,7 @@
 <h2>§3 · Phase 1 TODO (to Iven)</h2>
 
 <p style="color: var(--muted); font-size: 12px; max-width: 900px; margin: 0 auto;">
-  每條 TODO 標出「<strong>現況</strong>」+「<strong>待解決問題</strong>」。打勾代表已對齊；展開看細節。
+  每條 TODO 標出「<strong>現況</strong>」+「<strong>待解決問題</strong>」+「<strong>✅ Iven 答覆</strong>」(6/19 catch-up)。打勾代表已對齊；展開看細節。
 </p>
 
 <ul class="todo">
@@ -533,8 +622,8 @@
   <!-- BLOCKER: dev secrets -->
   <li class="blocker">
     <div class="todo-head">
-      <input type="checkbox" id="t-blocker">
-      <label for="t-blocker" class="todo-title">🔴 BLOCKER：拿 dev <code>.env.local</code> 兩把 Supabase key</label>
+      <input type="checkbox" id="t-blocker" checked>
+      <label for="t-blocker" class="todo-title">🔴 BLOCKER：拿 dev <code>.env.local</code> 兩把 Supabase key <span class="pt pt-done">✅ 已解</span></label>
     </div>
     <div class="todo-now">
       <strong>現況：</strong>本機 <code>~/Jottacloud/Projects/qoome/qoome-content-factory/</code> 沒 <code>.env.local</code>，<code>npm run dev</code> 起不來
@@ -546,17 +635,22 @@
         <li>SSR 用的 <code>SUPABASE_SERVICE_KEY</code>（service role）給我嗎？還是 dev 不需要 SSR /report?</li>
       </ul>
     </div>
+    <div class="answer">
+      <div class="answer-title">✅ Iven 答覆 (6/10)</div>
+      Iven 6/10 提供 <code>~/Jottacloud/Projects/qoome/iven-keys.md</code>，含完整 Supabase service_role + anon_key + Postgres password + GitHub PAT 備份。
+      ⚠️ 注意該檔案不可 commit（6 個 sub-repo <code>.gitignore</code> 都已加 <code>iven-keys.md</code> 條目，本地獨佔 commit 未 push）。
+    </div>
   </li>
 
   <!-- ① Persona / Soul -->
-  <li class="gap">
+  <li class="misc">
     <div class="todo-head">
       <input type="checkbox" id="t-persona">
-      <label for="t-persona" class="todo-title">① Persona / Soul 提取 UI <span class="pt pt-gap">缺工作流</span></label>
+      <label for="t-persona" class="todo-title">① Persona / Soul 提取 UI <span class="pt pt-deferred">🟡 全延後到 nuwa 工具 ready</span></label>
     </div>
     <div class="todo-now">
       <strong>現況：</strong>PersonasPage 只能手填（6 basic + 7 tag + prompt + 6 JSONB 進階）；
-      Gateway 沒有 <code>/intake/*</code> endpoint，Intake / nuwa skill 尚未 expose
+      Gateway <ins>已加 <code>/api/v1/intake/*</code> (6/19 T4)，但</ins> nuwa skill 尚未 expose
     </div>
     <div class="todo-ask">
       <div class="todo-ask-title">待解決問題</div>
@@ -566,13 +660,19 @@
         <li><code>currentEdge.config</code> 完整 schema？persona/soul 是 reference id 還是 inline？</li>
       </ul>
     </div>
+    <div class="answer">
+      <div class="answer-title">🟡 Iven 答覆 (6/10) — 全延後</div>
+      Iven 6/10 明示：「dr-ben 之前的 persona 是隨便抓伯格醫生影片提取出來的，<strong>之後我可能要等 nuwa 這些 Edge 端的工具好了再來重新提取</strong>」。
+      <strong>結論</strong>：Persona/Soul 細節（schema、persona vs soul、多 persona）<strong>全延後到 nuwa 工具 ready 後再決定</strong>，現階段不在 Phase 1 主路徑。
+      未答的 Persona v4 OQ 1/2/4（framework 預設 / forbidden_phrases 命名 / Supabase schema 拆檔）可跟 nuwa 整批延後對齊。
+    </div>
   </li>
 
   <!-- ② LINE / FB -->
-  <li class="warn">
+  <li class="misc">
     <div class="todo-head">
-      <input type="checkbox" id="t-channels">
-      <label for="t-channels" class="todo-title">② LINE OA / FB 帳號設定 <span class="pt pt-p1" style="background: var(--warn-bg); color: var(--warn);">schema 有，UX 太工程</span></label>
+      <input type="checkbox" id="t-channels" checked>
+      <label for="t-channels" class="todo-title">② LINE OA / FB 帳號設定 <span class="pt pt-done">✅ 4 問全解</span></label>
     </div>
     <div class="todo-now">
       <strong>現況：</strong>SettingsPage 已有 LINE Messaging API（channel_access_token + secret + oa_name）/
@@ -588,13 +688,22 @@
         <li>串完 LINE OA 後文章怎麼 push 出去？Edge Console 直發 / Gateway 代發 / n8n 中繼？</li>
       </ul>
     </div>
+    <div class="answer">
+      <div class="answer-title">✅ Iven 答覆 (6/10 chat + 6/19 commits)</div>
+      <ul>
+        <li><strong>FB 走 Late.io</strong> ✅ <strong>留</strong>：6/10「FB 等 Social Media 走 Late.io 統一閘道，因為直走 FB 非常麻煩，token 有時間限制；Late.io 又支援一堆 social media，不用為不同的寫 adapter」</li>
+        <li><strong>LINE credentials 加密</strong> ✅ <strong>T6 sentinel pattern (6/19)</strong>：真值放 <strong>Gateway DB (Supabase)</strong>，Edge Console 只 UI；GET <code>/config</code> 對 <code>channels.line.{channel_secret, channel_access_token}</code> + <code>channels.wordpress.auth_header</code> auto-redact 成 <code>__REDACTED__</code>；PATCH 收到 sentinel 還原現值（避免整包 round-trip 洗掉 secret）。<strong>Edge Console UI 必須遵守此 sentinel 慣例</strong></li>
+        <li><strong>LINE OA 自家 vs 共用</strong> ✅ <strong>每位 expert 自己的 OA</strong>：6/10「每個 expert 都有自己的 Line OA 和 social media」；現階段 expert LINE OA 主要串 Intake chatbot Agent，之後 Hermes 才串醫生自己的 Line</li>
+        <li><strong>文章 push 路徑</strong> ✅ <strong>Edge → Gateway → Social Media Publisher Skill (n8n)</strong>：6/10「發文章都是從 Edge 端呼叫 Social Media Publisher 的 Skill 來執行的，目前是寫好的 n8n」</li>
+      </ul>
+    </div>
   </li>
 
   <!-- ③ Personal-wiki -->
-  <li class="gap">
+  <li class="warn">
     <div class="todo-head">
       <input type="checkbox" id="t-wiki">
-      <label for="t-wiki" class="todo-title">③ Personal-wiki + 醫師 onboarding <span class="pt pt-gap">完全沒有</span></label>
+      <label for="t-wiki" class="todo-title">③ Personal-wiki + 醫師 onboarding <span class="pt pt-done">✅ ownership / 形式 / 存哪</span> <span class="pt pt-gap">🟡 剩 3 問</span></label>
     </div>
     <div class="todo-now">
       <strong>現況：</strong>無對應 tab / 表 / endpoint；
@@ -611,13 +720,24 @@
         <li><strong>醫師 onboarding flow：</strong>Phase 1 要做 multi-tenant 自助開戶嗎？brief 寫「手動開帳號」→ 自助先不做？</li>
       </ul>
     </div>
+    <div class="answer">
+      <div class="answer-title">✅ Iven 答覆 (6/10) — 3 問已解，3 問留 Karen 決定</div>
+      <ul>
+        <li><strong>ownership</strong> ✅ <strong>Karen 完全主導</strong>：6/10「Personal Wiki 整個由妳來規劃，<strong>放手規劃，做錯也沒關係，反正隨便迭代改就好</strong>。我這塊都不熟，沒實作過」</li>
+        <li><strong>形式</strong> ✅ <strong>GitHub repo per Edge</strong>：6/10「之前我有和 Claude 討論過，他建議我不需要裝 Obsidian，<strong>每個 Edge 用 GitHub Repo 來做即可</strong>，根據 Karpathy 的說法就是檔案和連結。建好 GitHub Repo 後，User 想自己有 UI 管，再裝 Obsidian add 一個外部的 vault 即可」</li>
+        <li><strong>存哪</strong> ✅ <strong>Edge 各自 GitHub repo</strong>：6/10「我就想說讓每個 edge 保留自己的，存在他們專屬的 GitHub Repo 中」</li>
+        <li><strong>怎麼餵 nuwa</strong> 🟡 <strong>Persona v4 OQ3 半答</strong>：Iven 6/10 給知識四分類（Personal Wiki 屬「高變動」），但 nuwa 注入方式未指定。建議順序：Personal Wiki → Librarian-Private → Methodology (nuwa) → Librarian-Global / PubMed</li>
+        <li><strong>tab 位置</strong> 🟡 留 Karen 決定</li>
+        <li><strong>onboarding 自助</strong> 🟡 Iven 未明示，需確認</li>
+      </ul>
+    </div>
   </li>
 
   <!-- ④ 範圍 / 跨 repo -->
   <li class="misc">
     <div class="todo-head">
-      <input type="checkbox" id="t-scope">
-      <label for="t-scope" class="todo-title">④ 範圍 / 跨 repo 對齊</label>
+      <input type="checkbox" id="t-scope" checked>
+      <label for="t-scope" class="todo-title">④ 範圍 / 跨 repo 對齊 <span class="pt pt-done">✅ 4 問全解</span></label>
     </div>
     <div class="todo-now">
       <strong>現況：</strong>沒明確 deadline；Iven 後端解耦中（Intake / nuwa skill 還在動）；dr-ben 角色定位待釐清
@@ -631,9 +751,29 @@
         <li>s30-r14 v0.6 折修完，會不會影響 Edge Console 設計？Intake 系 Skill 要不要先別假設 stable？</li>
       </ul>
     </div>
+    <div class="answer">
+      <div class="answer-title">✅ Iven 答覆 (6/10 chat + 6/19 commits)</div>
+      <ul>
+        <li><strong>Phase 1 deadline</strong> ✅ <strong>六月 production</strong>：6/10「P1 我設定是六月，就是做到真的可以 production，然後讓 dr-lin 和 dr-norman 兩個 user 真的可以上線天天用」</li>
+        <li><strong>dr-ben 納入 P1</strong> ✅：6/10「dr-ben 是我們平台自己經營天天會發文及 demo Intake 用的」「<strong>dr-ben 是要納入 P1 設計的</strong>」+ Iven 鼓勵 Karen 做自己醫美 expert Edge dogfood (my18.cc)</li>
+        <li><strong>Gateway 解耦</strong> ✅ <strong>已完成</strong>：6/10「目前 Gateway、Skill、Librarian 的解耦已經做完，但實際在接 edge 時，會不會有什麼問題，我也還不確定。我現在正在把 Skill 重構，寫 code 是好的，只是優化」</li>
+        <li><strong>s30-r14 影響</strong> ✅ <strong>已全收尾</strong>：R52-55 全 closed（R52 Intake 經 Gateway / R53 RAG 全域庫修 / R54 RAG 鏈路硬化 / R55 ADR-013+016 jointly Accepted）。Intake RAG 全線 GA。<strong>6/19 LINE T1-T6 + campaign T5</strong> 進一步把 tenant resolution chain 從 LINE webhook 一路打通到 Skill（ADR-LINE-001~007）</li>
+      </ul>
+    </div>
   </li>
 
 </ul>
+
+<div class="new-todo">
+  <div class="new-todo-title">🆕 新待對齊（catch-up 後浮上來的 + 殘留）</div>
+  <ol>
+    <li><strong>餵 nuwa 注入方式</strong>：整份 dump / RAG 檢索 / 標籤過濾？（OQ3 半答）</li>
+    <li><strong>Personal-wiki tab 位置</strong>：Console 新 tab / 塞 Persona 底下 / 塞 Librarian 底下？</li>
+    <li><strong>醫師 onboarding</strong>：P1 要 multi-tenant 自助開戶嗎？或維持手動開帳號？</li>
+    <li><strong>Persona v4 OQ 1/2/4</strong>（framework 預設 / forbidden_phrases 命名 / Supabase schema 拆檔）— 可跟 nuwa 工具 ready 整批延後對齊</li>
+    <li><strong>等 Iven push spec</strong>：<code>ADR-line-multitenant-decouple-v0.2</code> + <code>SM-001</code> 子圖檔目前本地沒有（commits 引用但 spec 還沒 push）。動 Edge Console LINE 設定 UI 前先催 Iven push</li>
+  </ol>
+</div>
 
 </body>
 </html>
