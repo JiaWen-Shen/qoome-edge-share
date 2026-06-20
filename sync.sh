@@ -11,12 +11,12 @@
 #       要改就在這個 repo 內直接編輯
 #
 # 用法：
-#   bash ~/Jottacloud/vibe/qoome-edge-share/sync.sh
+#   bash ~/Jottacloud/vibe/qoome/qoome-edge-share/sync.sh
 
 set -e
 
-VAULT="$HOME/Vaults/JW/JW_cloud/02_Projects/Qoome-Edge-Console"
-SHARE="$HOME/Jottacloud/vibe/qoome-edge-share"
+VAULT="$HOME/Vaults/JW_cloud/02_Projects/Qoome-Edge-Console"
+SHARE="$HOME/Jottacloud/vibe/qoome/qoome-edge-share"
 
 if [ ! -d "$VAULT" ]; then
   echo "❌ Obsidian source 不存在: $VAULT" >&2; exit 1

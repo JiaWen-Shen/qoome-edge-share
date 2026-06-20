@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<title>Qoome Persona Stack 分析報告 v2 — 2026-06-20</title>
+<style>
+  :root {
+    --bg: #fafaf8;
+    --fg: #1a1a1a;
+    --muted: #6b6b6b;
+    --line: #e0ddd5;
+    --accent: #2d5f4e;
+    --accent2: #6b3f8a;
+    --warn: #b85c3b;
+    --good: #4a7c5a;
+    --bad: #c44536;
+    --card-bg: #ffffff;
+    --code-bg: #f4f1ea;
+    --quote-bg: #f7f5ef;
+    --hl: #fef3c7;
+  }
+  * { box-sizing: border-box; }
+  html { font-size: 16px; }
+  body {
+    font-family: -apple-system, "Helvetica Neue", "Noto Sans CJK TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    line-height: 1.7;
+    margin: 0;
+    padding: 60px 20px 100px;
+  }
+  .container { max-width: 920px; margin: 0 auto; }
+  header { border-bottom: 2px solid var(--fg); padding-bottom: 24px; margin-bottom: 40px; }
+  header .meta { font-size: 13px; color: var(--muted); font-family: ui-monospace, "SF Mono", monospace; }
+  h1 { font-size: 28px; margin: 12px 0 8px; line-height: 1.3; }
+  h2 { font-size: 21px; margin: 56px 0 16px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+  h3 { font-size: 17px; margin: 32px 0 12px; color: var(--accent); }
+  h4 { font-size: 15px; margin: 20px 0 8px; }
+  p { margin: 12px 0; }
+  blockquote { border-left: 3px solid var(--accent); padding: 8px 16px; margin: 16px 0; background: var(--quote-bg); color: #2a2a2a; }
+  code { background: var(--code-bg); padding: 2px 6px; border-radius: 3px; font-family: ui-monospace, "SF Mono", monospace; font-size: 13px; }
+  pre { background: var(--code-bg); padding: 14px 18px; border-radius: 4px; overflow-x: auto; font-size: 13px; line-height: 1.55; border: 1px solid var(--line); }
+  .tldr { background: #fff; border: 2px solid var(--accent); border-radius: 4px; padding: 20px 24px; margin: 32px 0; }
+  .tldr h3 { margin-top: 0; color: var(--accent); }
+  .tldr ul { margin: 8px 0; padding-left: 22px; }
+  .tldr li { margin: 6px 0; }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
+  th, td { border: 1px solid var(--line); padding: 10px 12px; text-align: left; vertical-align: top; }
+  th { background: var(--code-bg); font-weight: 600; }
+  .card { background: var(--card-bg); border: 1px solid var(--line); border-radius: 4px; padding: 18px 22px; margin: 20px 0; }
+  .card-bad { border-left: 4px solid var(--bad); }
+  .card-good { border-left: 4px solid var(--good); }
+  .card-warn { border-left: 4px solid var(--warn); }
+  .card-info { border-left: 4px solid var(--accent2); }
+  .hl { background: var(--hl); padding: 1px 4px; border-radius: 2px; }
+  .strike { text-decoration: line-through; color: var(--muted); }
+  .footer-nav { margin-top: 80px; padding-top: 24px; border-top: 1px solid var(--line); font-size: 14px; color: var(--muted); }
+  .tag { display: inline-block; background: var(--code-bg); padding: 2px 8px; border-radius: 3px; font-size: 12px; font-family: ui-monospace, monospace; margin-right: 4px; }
+  .tag-bad { background: #fadcd6; color: var(--bad); }
+  .tag-good { background: #d8e8db; color: var(--good); }
+  .tag-info { background: #e6dcf0; color: var(--accent2); }
+  .quote-article { background: var(--quote-bg); padding: 12px 16px; margin: 10px 0; font-size: 14px; border-left: 3px solid var(--muted); }
+  .ascii { font-family: ui-monospace, "SF Mono", monospace; font-size: 13px; line-height: 1.4; background: var(--code-bg); padding: 14px 18px; border-radius: 4px; white-space: pre; overflow-x: auto; }
+  .score-bar { display: inline-block; width: 200px; height: 10px; background: var(--line); border-radius: 5px; overflow: hidden; vertical-align: middle; margin: 0 8px; }
+  .score-fill { height: 100%; }
+  .score-fill-good { background: var(--good); }
+  .score-fill-bad { background: var(--bad); }
+  .pill { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 12px; background: var(--code-bg); border: 1px solid var(--line); }
+  .note-frame { padding: 14px 18px; background: var(--quote-bg); border: 1px dashed var(--muted); border-radius: 4px; font-size: 14px; margin: 16px 0; }
+  /* Tooltip for jargon */
+  .tip { position: relative; display: inline-block; cursor: help; }
+  .tip .tip-icon {
+    display: inline-block; width: 14px; height: 14px; line-height: 14px;
+    text-align: center; border-radius: 50%; background: var(--accent2);
+    color: white; font-size: 10px; font-weight: 600; font-family: serif;
+    margin-left: 3px; vertical-align: middle;
+  }
+  .tip .tip-content {
+    visibility: hidden; opacity: 0; position: absolute; bottom: 130%; left: 50%;
+    transform: translateX(-50%);
+    background: #1a1a1a; color: #fff; padding: 10px 14px; border-radius: 6px;
+    font-size: 13px; font-weight: normal; width: 300px; line-height: 1.55;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 100;
+    transition: opacity 0.15s; text-align: left;
+  }
+  .tip .tip-content::after {
+    content: ""; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+    border: 6px solid transparent; border-top-color: #1a1a1a;
+  }
+  .tip:hover .tip-content { visibility: visible; opacity: 1; }
+  .tip .tip-content code { background: rgba(255,255,255,0.15); color: #fff; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <div class="meta">QOOME · INTERNAL ANALYSIS · v2 (2026-06-20)</div>
+  <h1>Persona Stack 分析報告 — 顯性 vs 隱性風格 × nuwa v4 × evaluation-driven 整合路線</h1>
+  <div class="meta">分析對象：my18.cc article id 8913 / 8870（已人工 tuning 過的 prompt-only 版本）<br>對齊：dr-lin Persona system prompt · nuwa v4 draft (2026-06-10) · Creative generator</div>
+</header>
+
+<div class="tldr">
+  <h3>TL;DR — 三句話</h3>
+  <ul>
+    <li><strong>my18.cc 現有文章是 Iven 已調滿意的 tuned 版本</strong>，仍出現比喻 verbatim 重複、connective 過用、結構機械、錯字等問題——直接證明 prompt-only 的 implicit-style ceiling 不是調整不到位，是路線天花板。</li>
+    <li><strong>nuwa v4 draft（Karen 6/10 已寫）方向正確</strong>——HOW &gt; WHAT &gt; HOW-they-speak 比例、三重驗證 gate、evidence_grade、Writing Workflow 都是對的；但它是 <strong>extraction-time</strong> 方法，缺 <strong>output-time evaluator gate</strong> 與 <strong>frown corpus 迭代機制</strong>。</li>
+    <li><strong>建議走兩階段提案：Phase 1 把 nuwa v3 升級到 v4 並重萃 dr-ben 跑優化生成；Phase 2 同主題產 3-5 個 variation 餵給 Iven 評分、把回饋累積成 frown corpus 與 rubric。</strong>後續 Phase 3 / 4（rubric 變成 publish gate、累積足量 corpus 後評估升級訓練）視 corpus 規模 organic 觸發，不用一開始 commit。</li>
+  </ul>
+</div>
+
+<h2>§1. 框架：顯性 vs 隱性風格</h2>
+
+<p>EMNLP 2025 Findings paper <em>"Catch Me If You Can? Not Yet: LLMs Still Struggle to Imitate the Implicit Writing Styles of Everyday Authors"</em>（<a href="https://arxiv.org/abs/2509.14543">arxiv 2509.14543</a>）量化過：LLM 用 prompt-only / few-shot in-context 模仿真人作者時，<strong>顯性層命中 ~60-70%</strong>，<strong>隱性層卡在 30-40%</strong>，且加範例、換大 model 都無法突破天花板。</p>
+
+<table>
+  <thead><tr><th></th><th>顯性風格（surface）</th><th>隱性風格（implicit）</th></tr></thead>
+  <tbody>
+    <tr><th>作者「能說得出口」</th><td>✅ 5 步框架、固定比喻、catchphrase、禁用詞、修辭手法</td><td>❌ 思考節奏、何時停、何時略、tone 何時嚴肅</td></tr>
+    <tr><th>Prompt 工具可傳遞</th><td>✅</td><td>❌</td></tr>
+    <tr><th>Paper 命中率</th><td>~60-70%</td><td>~30-40%（ceiling）</td></tr>
+    <tr><th>突破方法</th><td>—</td><td>Adapter (LoRA) 或 Activation Steering（Persona Vectors）</td></tr>
+  </tbody>
+</table>
+
+<div class="card card-warn">
+  <strong>關鍵理論結論</strong>：prompt 模仿風格有結構性天花板——再細的 system prompt 也只能改善顯性層，碰不到隱性層。要破天花板，要從「指令 model 怎麼做」改成「改變 model 的本能」。
+</div>
+
+<h2>§1.5 學術市場掃描（2025-2026 SOTA<span class="tip"><span class="tip-icon">i</span><span class="tip-content"><strong>SOTA = State-of-the-Art</strong>：學術或業界當前最高水準的方法或結果。論文 / 工程社群常用此詞指最新公認最佳實踐。</span></span>）</h2>
+
+<p>掃 2025-2026 學術 + 工業界對「persona / digital twin / style imitation」的最新成果，5 篇 paper × 3 個方向，補強 §1 的結論。</p>
+
+<h3>5 篇關鍵 paper</h3>
+
+<table>
+  <thead><tr><th>Paper</th><th>機構 / 時間</th><th>核心方法</th><th>對 Qoome 適用性</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><a href="https://arxiv.org/abs/2509.14543"><strong>Catch Me If You Can? Not Yet</strong></a></td>
+      <td>EMNLP 2025 Findings</td>
+      <td>量化 prompt-only / few-shot in-context<span class="tip"><span class="tip-icon">i</span><span class="tip-content"><strong>Few-shot in-context</strong>：在 prompt 中放少量範例（通常 2-10 個），讓 LLM 從範例學習任務，不重新訓練模型。</span></span> 模仿真人作者的 ceiling——顯性 60-70%、隱性 30-40%；加範例、換更大 model 都打不破</td>
+      <td><span class="tag tag-bad">High（地雷地圖）</span> §2 my18.cc 死板感的學術佐證</td>
+    </tr>
+    <tr>
+      <td><a href="https://arxiv.org/abs/2507.21509"><strong>Persona Vectors</strong></a></td>
+      <td>Anthropic 2025-07</td>
+      <td>把人格特質編碼成 model activation space<span class="tip"><span class="tip-icon">i</span><span class="tip-content"><strong>Activation Space</strong>：神經網路內部各層的數值表示空間。在這個空間做向量運算可以影響模型「思考方向」，比改 prompt 更接近模型本能。</span></span> 的方向向量，推論時 steering<span class="tip"><span class="tip-icon">i</span><span class="tip-content"><strong>Activation Steering</strong>：在推論時把預先計算的方向向量加進模型內部運算，引導輸出走向特定風格或人格，不用重新訓練模型。</span></span> 注入取代靜態 system prompt</td>
+      <td><span class="tag tag-good">High（治根方案）</span> 破 prompt-only 天花板的具體技術</td>
+    </tr>
+    <tr>
+      <td><a href="https://arxiv.org/abs/2603.23069"><strong>AuthorMix</strong></a></td>
+      <td>Saarland 2026-03</td>
+      <td>每作者訓 LoRA<span class="tip"><span class="tip-icon">i</span><span class="tip-content"><strong>LoRA = Low-Rank Adaptation</strong>：一種輕量微調技術。只訓練極小參數量（&lt;1% 原模型）就能讓模型學會特定任務或風格，可以為每位作者各自訓一個 adapter。</span></span> adapter<span class="tip"><span class="tip-icon">i</span><span class="tip-content"><strong>Adapter</strong>：可插拔的微調模組。基底模型不變，把不同 adapter 插上去就切換成不同風格 / 任務，避免每個任務都要 fine-tune 整個模型。</span></span>；low-resource target 從 high-resource adapter mix 出風格；outperforms GPT-5.1</td>
+      <td><span class="tag tag-good">High（解語料稀少）</span> 對齊 TODO §4「醫生著作不多」的直接答案</td>
+    </tr>
+    <tr>
+      <td><a href="https://arxiv.org/abs/2601.22288"><strong>PersonaCite</strong></a></td>
+      <td>2026-01</td>
+      <td>從訪談語料自動建立可問答 agentic<span class="tip"><span class="tip-icon">i</span><span class="tip-content"><strong>Agentic</strong>：能自主決策、規劃、執行多步動作的 AI 系統。不只是被動回答，會主動分析任務、選擇工具、迭代修正。</span></span> persona，含可驗證引用（每條 trace 回原 timestamp）</td>
+      <td><span class="tag tag-good">High（自動化）</span> 對齊 nuwa v4 evidence_grade 精神 + 全自動 pipeline</td>
+    </tr>
+    <tr>
+      <td><a href="https://arxiv.org/abs/2510.25536"><strong>TwinVoice Benchmark</strong></a></td>
+      <td>2025-10</td>
+      <td>Multi-dimensional digital twin<span class="tip"><span class="tip-icon">i</span><span class="tip-content"><strong>Digital Twin</strong>：真實人物或實體的 AI 數位分身——能模擬該對象的思考、回應、決策模式。本案場景：醫師的數位分身能依其知識與口吻服務患者。</span></span> 評測框架，分 Social / Interpersonal / Narrative 三層、6 能力維度</td>
+      <td><span class="tag tag-info">Med（驗收）</span> Qoome twin 輸出品質的學術錨點</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>三個收斂方向</h3>
+
+<div class="grid-2">
+  <div class="card card-good">
+    <h4>對「語料稀少」</h4>
+    <p>業界主流走兩條：</p>
+    <ul>
+      <li><strong>Adapter mixing</strong>（AuthorMix）—— 從 high-resource adapter mix 出風格，極少樣本即可</li>
+      <li><strong>Few-shot in-context</strong>（2-5 例啟動）—— 顯性可、隱性難（受 §1 ceiling 限制）</li>
+    </ul>
+    <p><strong>更可靠：adapter 路線</strong>。</p>
+  </div>
+
+  <div class="card card-good">
+    <h4>對「死板」</h4>
+    <p>2025 主流：<strong>activation-space steering</strong>（Persona Vectors）</p>
+    <ul>
+      <li>把人格編碼成向量、推論時動態注入</li>
+      <li>比靜態 prompt 自然 + 長 context 不衰減</li>
+    </ul>
+    <p><strong>prompt 路線到頂、要往 model 內部走</strong>。</p>
+  </div>
+
+  <div class="card card-good">
+    <h4>對「自動化萃取」</h4>
+    <p><strong>PersonaCite</strong>（2026）= 訪談文字 → agentic persona pipeline；最接近全自動</p>
+    <p>但對「域知識（醫療）+ 個性」聯合編碼仍需自設「知識層 vs 風格層分離」機制，業界尚無 turnkey<span class="tip"><span class="tip-icon">i</span><span class="tip-content"><strong>Turnkey</strong>：開箱即用的成品方案，不需要客製化整合或額外開發。</span></span> 框架。</p>
+  </div>
+</div>
+
+<h3>Approach — 提案核心論述</h3>
+
+<table>
+  <thead><tr><th>#</th><th>論述</th><th>適用場景</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>1</td>
+      <td><strong>質化任務需要不同的工具鏈</strong>——內容創作、品牌語氣、persona 模擬這類任務跟工程任務不同，沒有單元測試這種客觀對錯標準。LLM 無法自我驗證結果是否符合期待，容易中途收尾。因此需要建立明確的品質標準（rubric<span class="tip"><span class="tip-icon">i</span><span class="tip-content"><strong>Rubric</strong>：明文化的評分標準，原為教育領域評量量表；在 AI 工程裡指「拆成多維度、每維度有明確 reference 的品質標準」，可由人或 evaluator agent 對照使用。</span></span>）作為外部對照。</td>
+      <td>內容創作 / persona 模擬 / 品牌語氣場景</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td><strong>Prompt 工程本身有結構性上限</strong>——最新學術研究（EMNLP 2025）量化證明，prompt-only 方法模仿「隱性風格」（思考節奏、tone 起伏、何時用比喻）只能達到 30-40%；加更多範例、換更大模型都無法突破。投入更多時間在 prompt engineering 收益遞減。</td>
+      <td>判斷「再 tune 一次 prompt」是否值得時的依據</td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td><strong>evaluation-driven workflow 是 2025-2026 業界共識方向</strong>——從業界實作（Gary 連續 27 小時實驗）、機構研究（Anthropic 內部美術館評測）、到學術成果（Persona Vectors、PersonaCite、TwinVoice），都收斂到「拆 rubric → evaluator agent<span class="tip"><span class="tip-icon">i</span><span class="tip-content"><strong>Evaluator Agent</strong>：專責評分的 AI 角色，獨立於生成端，依 rubric 對輸出打分、判斷通過或退回，類似 code review 機器人。</span></span> → 迭代」這條路徑。</td>
+      <td>論證方法論的主流性與穩定性</td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td><strong>方法論的投入有複利效應</strong>——rubric 文件本身是組織內部品質標準的知識資產；累積的失敗案例 corpus<span class="tip"><span class="tip-icon">i</span><span class="tip-content"><strong>Frown Corpus</strong>：英文 frown = 皺眉；指「評估時皺眉的範例集合」——保留失敗案例與不通過的原因，作為 rubric 演化的料與未來模型訓練的反例資料集。</span></span>（失敗案例 + 不通過原因）將來能成為模型訓練素材。當期投入的評估工作，未來會持續產生 leverage。</td>
+      <td>說明投入價值的時間軸與複利效益</td>
+    </tr>
+    <tr>
+      <td>5</td>
+      <td><strong>跟 AI 自動化的關係</strong>——evaluator gate 不是限制 AI 自動化，是讓自動化能持續產出可用結果。沒有評估機制的 AI workflow 在多篇後品質容易崩塌；有評估機制的能維持穩定（Gary 27 小時連續產出實驗已驗證）。</td>
+      <td>說明品質機制與自動化目標並不衝突</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>對 Qoome 三痛點的 SOTA 對應</h3>
+
+<div class="ascii">[痛點 1] 語料稀少              → [SOTA] AuthorMix LoRA adapter mixing
+[痛點 2] persona 死板          → [SOTA] Persona Vectors activation steering
+[痛點 3] 萃取自動化            → [SOTA] PersonaCite 訪談 → agentic pipeline
+[痛點 4] 缺 implicit style ground truth → [SOTA] TwinVoice 多維評測 benchmark</div>
+
+<h2>§2. 診斷：my18.cc 是 tuned 版本仍見死板感</h2>
+
+<div class="note-frame">
+  <strong>重要 framing</strong>：my18.cc 現有的文章是已經反覆人工調整、被視為品質可接受的版本（不是 baseline），歷史 baseline 已不存在、無對照組。也就是說：本分析是直接針對「prompt-only + 人工 tuning 之後的最佳狀態」——本來預期最佳狀態應該已經沒問題，但仍見以下問題 = 證明這些問題不是調整不到位，是路線本身的 ceiling。
+</div>
+
+<p>抓 my18.cc 兩篇文章（id 8913 減重荷爾蒙、id 8870 褪黑激素），作者 ID 不同（78 / 1）但寫作風格幾乎相同——同一個 persona prompt 在驅動。對齊 dr-lin Personas tab 看到的「人設提示詞」結構。</p>
+
+<h3>顯性層命中（prompt 抓到了）</h3>
+
+<table>
+  <thead><tr><th>persona 特徵</th><th>文章對應</th><th>判定</th></tr></thead>
+  <tbody>
+    <tr><td>5 步框架（傾聽尋義→移障清淤→固基支持→結構順氣→必要干預）</td><td>兩篇結構幾乎一致：場景開頭 → 機制解釋 → 比喻 → 研究引用 → 個人化建議 → 末段「今晚試試」</td><td><span class="tag tag-good">命中</span></td></tr>
+    <tr><td>「天賦本有的治癒力」信念</td><td>"你的身體本來就知道怎麼調節體重" / "你的生理時鐘沒有壞掉"</td><td><span class="tag tag-good">命中</span></td></tr>
+    <tr><td>「河裡撈垃圾」比喻</td><td>兩篇 verbatim 重複「河裡都是垃圾...你不先去撈垃圾,只是一直倒乾爽/乾淨的水進去」</td><td><span class="tag tag-good">命中</span></td></tr>
+    <tr><td>反問句引導</td><td>"你有沒有發現,熬夜隔天特別想吃甜食?" / "你需要的是精準的時候訊號,而不是更大聲的鈴聲"</td><td><span class="tag tag-good">命中</span></td></tr>
+    <tr><td>第一人稱醫師權威</td><td>"我常講" / "我在臨床上看過" / "我在診間最常看到"</td><td><span class="tag tag-good">命中</span></td></tr>
+    <tr><td>末段「必要干預」具體動作</td><td>"5 次腹式呼吸 4-4-6" / "從 0.5mg 開始,連續三天"</td><td><span class="tag tag-good">命中</span></td></tr>
+  </tbody>
+</table>
+
+<p>顯性層估算 <strong>~70%</strong>：<span class="score-bar"><span class="score-fill score-fill-good" style="width:70%"></span></span></p>
+
+<h3>隱性層 ceiling 證據（即使 tuned 還是出現）</h3>
+
+<div class="card card-bad">
+  <h4>1. 比喻被當「必填欄位」用，不是「想到才用」</h4>
+  <div class="quote-article">「河裡都是垃圾,你不先去撈垃圾,只是一直倒乾爽的水進去,這條河會變乾爽嗎?」<br><em>—— article 8913（減重荷爾蒙）</em></div>
+  <div class="quote-article">「這就像河裡都是垃圾,你不先去撈垃圾,只是一直倒乾淨的水進去,這條河會變乾淨呢?」<br><em>—— article 8870（褪黑激素）</em></div>
+  <p>不同 topic 卻 verbatim 套用同一比喻——比喻清單被當 must-use checklist。</p>
+</div>
+
+<div class="card card-bad">
+  <h4>2. Connective 詞反覆使用</h4>
+  <p><code>說穿了</code>、<code>坦白講</code>、<code>更粗的是</code>、<code>問題是</code> 兩篇都密集使用。LLM 學到 surface lexicon，但缺「何時不用」的判斷力。</p>
+</div>
+
+<div class="card card-bad">
+  <h4>3. 5 步框架機械執行</h4>
+  <p>不同 topic 但段落順序與轉折節奏一致——framework 被當 template fill-in，不是「思考順序」。</p>
+  <div class="ascii">場景開頭（凌晨一點/凌晨兩點）
+→ 你以為 X 是 Y,其實不是
+→ 機制解釋 + 比喻
+→ 研究引用（PMID 格式）
+→ 「我在診間看過」鋪陳
+→ 個人化建議
+→ 末段「今晚試試」+ 一句「你的身體本來就...」收尾</div>
+</div>
+
+<div class="card card-bad">
+  <h4>4. 錯字 / 邏輯錯誤透露 publish flow 缺 review gate</h4>
+  <ul>
+    <li><span class="strike">他要不要吞兩顆呢?</span>（應是「我」）</li>
+    <li><span class="strike">更<strong>粗</strong>的是</span>（應是「糟」，反覆出現）</li>
+    <li><span class="strike">在固定<strong>時候</strong>訊號</span>（應是「時間」）</li>
+  </ul>
+  <p>真人醫師絕不會放過這種錯——顯示 AI 直接 publish，無 review gate。</p>
+</div>
+
+<div class="card card-bad">
+  <h4>5. Tone 沒有起伏</h4>
+  <p>整篇同一「溫暖權威」tone。真人講副作用 / 警告會自動嚴肅，講個人經驗會放鬆——AI 整篇平直。</p>
+</div>
+
+<p>隱性層估算 <strong>~30%</strong>：<span class="score-bar"><span class="score-fill score-fill-bad" style="width:30%"></span></span></p>
+
+<blockquote>
+<strong>診斷結論</strong>：這份是 Iven 已 tuned 的 best output。顯性層 ~70% 命中、隱性層 ~30% ceiling——「形式像、靈魂機械」。即使再調 prompt 也卡在這條線。
+</blockquote>
+
+<h2>§3. nuwa v4 已知狀態（Karen 6/10 draft）</h2>
+
+<p>Karen 6/10 已寫 <code>iven-persona-extraction-prompt-v4-draft.md</code>，方向高度成熟，不是 prompt 黑盒子。摘要：</p>
+
+<h3>v4 三大核心原則</h3>
+<table>
+  <thead><tr><th>原則</th><th>內容</th><th>對齊本報告什麼</th></tr></thead>
+  <tbody>
+    <tr><td>1. HOW &gt; WHAT &gt; HOW-they-speak</td><td>60% 臨床推理框架 + 20% 信念光譜 + 20% 表達聲紋</td><td>明確優先 implicit 層級（思考流程比 catchphrase 重要）</td></tr>
+    <tr><td>2. 站在臨床框架上提取</td><td>SOAP / Functional_Medicine_Matrix / DDx_Tree / Europaem / Custom</td><td>降低 LLM 編造 cognitive_schema 的風險</td></tr>
+    <tr><td>3. 誠實 &gt; 完整</td><td>evidence_grade（verbatim/artifact/impression）+ source + conflicts_with</td><td>三層 honesty 機制</td></tr>
+  </tbody>
+</table>
+
+<h3>v4 強項（已對齊 evaluation-driven）</h3>
+
+<table>
+  <tbody>
+    <tr><td><span class="tag tag-good">✅</span> 雙檔架構</td><td><code>soul.json</code>（思考/判斷）+ <code>persona.json</code>（身分/聲紋）</td></tr>
+    <tr><td><span class="tag tag-good">✅</span> 6 agent 並行採集</td><td>著作 / 對話 / 表達 / 他者 / 決策 / 時間線</td></tr>
+    <tr><td><span class="tag tag-good">✅</span> 三重驗證 Gate</td><td>cross-topic 複現 / 生成力 / 排他性</td></tr>
+    <tr><td><span class="tag tag-good">✅</span> Two checkpoints</td><td>採集 Review（Phase 1.5）/ Schema Review（Phase 2.5）</td></tr>
+    <tr><td><span class="tag tag-good">✅</span> known_limitations 強制 ≥ 3 條</td><td>明文標資料局限</td></tr>
+    <tr><td><span class="tag tag-good">✅</span> Writing Workflow (Agentic Protocol)</td><td>寫文章前的研究流程（議題分類 → framework-aware research → voice apply）</td></tr>
+    <tr><td><span class="tag tag-good">✅</span> medical_stances 雙向 framing</td><td>positive_framing + negative_framing（取代 v3 純 forbidden）</td></tr>
+    <tr><td><span class="tag tag-good">✅</span> 客觀評估</td><td>BFI/MBTI、CharacterEval、darwin 9 維、A/B 盲評</td></tr>
+  </tbody>
+</table>
+
+<div class="card card-info">
+  <strong>Iven 2026-06-18 自主實驗</strong>：Iven 讓 Claude 讀 nuwa v4 skill（沒安裝、只看文件），Claude 用 v4 方法上 YT 抓宋晏仁醫師逐字稿、自主跑 persona extraction，Iven 自評產出「品質較好」。<br>
+  → 證實 v4 prompt-only 跑通 = 方法論本身可被 LLM-on-itself 執行；但生成的具體 articles 在 Iven 本機，本報告無 access，待 Iven 分享後可做 v3 vs v4 對照。
+</div>
+
+<div class="card card-info">
+  <strong>新證據：Dr-Ben-persona.json（2026-06-17 nuwa 萃取產出）</strong><br>
+  路徑：<code>~/Jottacloud/vibe/qoome/Project_instruction/Dr-Ben-persona.json</code><br>
+  狀態：Phase 4 PASS · engine-aligned 2026-06-17 · <strong>nuwa 萃取但用 Iven 原 Gemini JSON 結構填，未測效果</strong><br>
+  Subject：dr-ben（虛構人設「班宇恩 健康減重專家」），思維素材取自宋晏仁公開著作 / 影片<br><br>
+  此 persona 結構展現的 nuwa 成熟度（≠ v4 完整 schema，仍是 v3 結構）：
+  <ul style="margin: 6px 0;">
+    <li><code>core_philosophy.mental_models</code> 8 條（M1-M8，含 <code>signature: true</code> 標記）</li>
+    <li><code>cognitive_schema.causal_beliefs</code> 5 條 + <code>decision_priorities</code> 鏈式描述</li>
+    <li><code>metadata.internal_tensions</code> 3 條保留矛盾不抹平（T1 / T2 / T4）— 對齊 v4 <code>conflicts_with</code> 精神</li>
+    <li><code>voice_architecture.humility_markers</code>、<code>signature_openers/closers</code>、<code>code_switching</code></li>
+    <li><code>chatbot_config</code> 包 <code>greeting_template</code> / <code>length_policy</code> / <code>absolute_avoid</code>—— 涵蓋 chatbot 場景，不只生文章</li>
+    <li><code>personality_prompt</code> 完整自然語言 system prompt（~700 字含 T1/T2/T4 張力觸發指引）</li>
+  </ul>
+  → <strong>Dr-Ben persona 結構比 my18.cc 看到的 dr-lin 簡版 textarea 細很多</strong>。Iven 「沒測效果」的待測項就是：把這個 persona 丟給 LLM 跑 baseline 文章，會不會比 my18.cc tuned 版本好。
+</div>
+
+<div class="card card-warn">
+  <strong>提案：Dr-Ben persona 立刻可做的對照實驗</strong><br>
+  目前 baseline 有：<br>
+  (a) my18.cc tuned 版本（7 篇 Gemini-only prompt，Iven 已調滿意）<br>
+  (b) Dr-Ben-persona.json（nuwa 萃取，未測）<br>
+  (c) Iven 宋晏仁實驗的 Claude 自跑版本（in Iven 機器）<br><br>
+  3 組對照丟一個共同主題（例「胰島素阻抗」/「211 餐盤」），盲評三組哪份「更像目標醫師」——直接量化 v3 prompt-only vs v4-method vs claude-self-applied 的隱性風格 ceiling 差距。
+</div>
+
+<h2>§4. nuwa v4 vs Creative generator 對照矩陣</h2>
+
+<div class="card card-info">
+  <strong>Creative generator</strong>：TM 內部正在試的內容生產流程實驗。透過「writer agent 生稿 + evaluator agent 依 rubric 評分 + 失敗案例（frown corpus）累積回灌」這條 evaluation-driven loop，解決「質化任務沒有單元測試、AI 容易中途收尾」的問題；希望產出可以重複執行、長時間維持品質的內容生產 SOP，以及內部組織自有的 rubric 知識資產。
+</div>
+
+<p>兩者解的是 <strong>不同階段</strong>的問題，組合起來才完整。</p>
+
+<table>
+  <thead><tr><th>維度</th><th>nuwa v4（extraction-time）</th><th>Creative generator（output-time）</th></tr></thead>
+  <tbody>
+    <tr><td>時機</td><td>看醫師素材 → 萃 persona</td><td>看 AI 產出 → 過審</td></tr>
+    <tr><td>產物</td><td><code>soul.json</code> + <code>persona.json</code></td><td>rubric scoring + reject/pass</td></tr>
+    <tr><td>核心 gate</td><td>三重驗證（cross-topic / generative / exclusive）</td><td>publish gate（多維 rubric 不通過 → reject）</td></tr>
+    <tr><td>誠實機制</td><td>evidence_grade + conflicts_with + known_limitations</td><td>frown corpus 累積失敗案例</td></tr>
+    <tr><td>演化機制</td><td><span class="tag tag-bad">❌</span> 還沒明確（one-shot extraction）</td><td><span class="tag tag-good">✅</span> Stage 1→2→3 organic 演進</td></tr>
+    <tr><td>與 model 內化關係</td><td><span class="tag tag-bad">❌</span> 純 prompt 注入</td><td><span class="tag tag-good">✅</span> frown corpus → 自然成為 fine-tune material</td></tr>
+  </tbody>
+</table>
+
+<h3>5 個 Creative generator 可借鏡進 nuwa v4 的點</h3>
+
+<table>
+  <thead><tr><th>#</th><th>nuwa v4 缺口</th><th>Creative generator 借鏡</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>缺 output-time evaluator gate（產文章後沒再過審）</td><td>把 <code>metaphor_bank.usage_frequency</code> + <code>catchphrases.usage_frequency</code> 變 publish-time 閾值；同比喻單篇 ≥ N 次 reject</td></tr>
+    <tr><td>2</td><td>缺 frown corpus 迭代（one-shot extraction）</td><td>每次 reject + 原因配對存起來，月度回灌 nuwa 調整 schema_emphasis / metaphor_bank / forbidden</td></tr>
+    <tr><td>3</td><td>客觀評估走學術量表（BFI/MBTI/CharacterEval）抽象</td><td>加 <code>surface_rules</code> 欄列具體 don't（如「絕對不要連續三段以說穿了開頭」）作為 prompt hard constraint</td></tr>
+    <tr><td>4</td><td>採集只吃醫師自有素材，沒吃 AI baseline 反例</td><td>加 Agent 7（baseline AI output + 皺眉 inventory）—— 把現有 my18.cc 7 篇當輸入，告訴 v4 「這些是死板樣本，避開」</td></tr>
+    <tr><td>5</td><td>三重驗證沒涵蓋「結構多樣性」</td><td>加 Gate 4：同 persona 跑 5 個不同主題 baseline，看段落結構是否互相 cluster 太近</td></tr>
+  </tbody>
+</table>
+
+<h3>nuwa v4 已做對、不用補</h3>
+
+<ul>
+  <li>HOW &gt; WHAT &gt; HOW-they-speak 60/20/20 比例（明確 prioritize implicit 層）</li>
+  <li>站在既有臨床框架（SOAP / FM Matrix / DDx_Tree / Europaem）— 降低 cognitive_schema 編造風險</li>
+  <li>三重驗證 gate — 跟 evaluation-driven 同邏輯</li>
+  <li>evidence_grade + source + conflicts_with 三層 honesty</li>
+  <li>medical_stances positive_framing + negative_framing 雙向</li>
+  <li>Writing Workflow (Agentic Protocol)</li>
+  <li>客觀評估方法論</li>
+</ul>
+
+<h2>§5. 提案：兩階段執行路線</h2>
+
+<p>分成「優化生成」與「variation × evaluation」兩階段，每階段都能獨立交付，並且 Phase 2 的產出自動成為 Phase 3+ 的訓練素材。</p>
+
+<h3>Phase 1 — 優化的生成機制（先治當期問題）</h3>
+
+<div class="card card-good">
+  <h4>目標</h4>
+  <p>讓現有 Content Factory 產出的文章比 my18.cc tuned 版本更貼近目標醫師——不改架構、不動模型，只升級 persona 萃取與注入鏈。</p>
+
+  <h4>具體動作</h4>
+  <ol>
+    <li><strong>nuwa v3 → v4 升級</strong>——把現用的 v3 prompt 升級成 Karen 已草擬的 v4：<br>
+      • HOW &gt; WHAT &gt; HOW-they-speak 60/20/20 比例<br>
+      • 採用既有臨床框架（SOAP / Functional Medicine Matrix / Europaem）為 cognitive_schema 骨架<br>
+      • 三重驗證 gate（cross-topic / generative / exclusive）<br>
+      • 雙檔架構（<code>soul.json</code> 思考層 + <code>persona.json</code> 表達層）
+    </li>
+    <li><strong>套用到 dr-ben</strong>——用 v4 重萃 Dr-Ben-persona（現版本是 nuwa 萃取但塞 v3 Gemini JSON 結構），把萃取的 framework + causal_beliefs + voice_architecture 重新分層注入。</li>
+    <li><strong>跑一批新 baseline</strong>——同一份主題清單，新舊 persona 各跑一次，作為 Phase 2 evaluation 的對照組。</li>
+  </ol>
+
+  <h4>Owner</h4>
+  <p>Karen 主導生成端；nuwa skill 跟 persona JSON 結構需 Iven 對齊。</p>
+
+  <h4>產出</h4>
+  <p>升級版 <code>soul.json</code> + <code>persona.json</code>、5-10 篇 baseline 文章。</p>
+</div>
+
+<h3>Phase 2 — variation × evaluation（Karen + Iven 共同執行）</h3>
+
+<div class="card card-good">
+  <h4>核心構想</h4>
+  <p>同一主題用優化過的 persona 生成多個 variation，由 <strong>Karen 與 Iven 共同評分</strong>，蒐集判斷與皺眉點作為下游 rubric 與 persona refinement 的原料。</p>
+
+  <h4>具體動作</h4>
+  <ol>
+    <li><strong>每主題生成 3-5 個 variation</strong>——同一份 persona、同一個主題，控制變數逼出隱性風格差異。<strong>variation 變數的具體設計留待 Phase 1 完成後，Karen 視 Phase 1 baseline 表現再規劃。</strong></li>
+    <li><strong>做一個內部 evaluation webpage</strong>——簡單 web form，呈現主題 + 多個 variation 並列、提供評分欄位（排序、highlight 皺眉句、偏好標記、自由 comment）。Karen 跟 Iven 各自登入評分，資料統一收進後端。</li>
+    <li><strong>累積 frown corpus</strong>——每筆配對保留：variation 內容 + 雙方評分 + 皺眉原因 + 偏好理由。</li>
+    <li><strong>從 corpus 萃 rubric 細節</strong>——累積到一定量（建議 ~50 筆）後，把皺眉原因歸類，產出可被 evaluator agent 執行的 rubric 維度與閾值。</li>
+    <li><strong>rubric 回灌 Phase 1</strong>——學到的細節寫回 nuwa v4 的 <code>metaphor_bank.usage_rules</code> / <code>voice_architecture.surface_rules</code> / <code>content_boundaries</code>，產出 v4.1。</li>
+  </ol>
+
+  <h4>Owner</h4>
+  <p>Karen 負責 webpage 開發、variation 設計、corpus 結構化、rubric 萃取；Iven 共同評分作為領域權威 ground truth 來源。</p>
+</div>
+
+<h3>Phase 2 預期產出</h3>
+
+<table>
+  <thead><tr><th>產出</th><th>用途</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Evaluation webpage</strong></td><td>Karen 與 Iven 評分介面 + corpus 後端</td></tr>
+    <tr><td><strong>Frown corpus（持續累積）</strong></td><td>每筆 variation × 雙方評分 × 皺眉/偏好註記；後續 rubric 萃取與訓練素材來源</td></tr>
+    <tr><td><strong>Rubric v0 → v1 → vN</strong></td><td>多維度評分標準，可被 evaluator agent 執行</td></tr>
+    <tr><td><strong>nuwa v4.1（refined persona schema）</strong></td><td>把 corpus 學到的 surface rule / metaphor 使用時機 / boundary 寫回 persona 萃取結構</td></tr>
+    <tr><td><strong>對齊的內部知識資產</strong></td><td>Karen 與 Iven 對「什麼算好」的共識文件化、可被新成員 onboard 時繼承</td></tr>
+  </tbody>
+</table>
+
+<h3>後續階段（不在本提案 commit 範圍）</h3>
+
+<table>
+  <thead><tr><th>階段</th><th>動作</th><th>觸發條件</th></tr></thead>
+  <tbody>
+    <tr><td>Phase 3</td><td>把 rubric 包成 publish-time evaluator gate，整合進 ArticlesPage state machine</td><td>rubric 維度穩定（~3 個月 + 50 筆 corpus）</td></tr>
+    <tr><td>Phase 4</td><td>frown corpus 累積規模時，評估升級到 fine-tune / persona vector</td><td>corpus ≥ ~100 entries 且 prompt 路線確認到頂</td></tr>
+  </tbody>
+</table>
+
+<div class="card card-good">
+  <strong>方法論的核心理念</strong>：每階段都能獨立交付、產出能 carry 到下一階段。<br>
+  Phase 1 改善當期 publish 品質；Phase 2 累積的 corpus 同時是 rubric 演化原料、未來訓練素材；Phase 3、4 是 organic escalation，不用一開始就 commit 做 model 訓練投資。
+</div>
+
+<h2>§6. Next</h2>
+
+<ul>
+  <li><strong>對齊兩階段提案</strong>——把本報告 §2 + §4 + §5 整理成 1-pager，與 Iven 同步兩階段路線、確認 owner 分工。</li>
+  <li><strong>啟動 Phase 1</strong>——以 Karen 已草擬的 nuwa v4 重萃 dr-ben，把現版本（nuwa 萃取但塞 v3 Gemini JSON 結構）升級為 v4 雙檔架構，產出 <code>dr-ben-soul.json</code> + <code>dr-ben-persona.json</code>。</li>
+  <li><strong>跑 baseline 對照</strong>——同一份主題清單，用新舊 persona 各跑一次，作為 Phase 2 evaluation 的對照材料。</li>
+  <li><strong>規劃 evaluation webpage</strong>——進入 Phase 2 前，設計簡單 web form 給 Karen 與 Iven 共同評分用；後端負責累積 corpus。variation 變數的具體設計待 Phase 1 baseline 出來後再規劃。</li>
+  <li><strong>跑 Phase 2 評分節奏</strong>——啟動後每週 1-2 主題、每主題 3-5 variation；累積足量 corpus 後萃 rubric、回灌 nuwa v4.1。</li>
+</ul>
+
+<h2>§7. 對應 TODO 連結</h2>
+
+<table>
+  <tbody>
+    <tr><td>本報告 §2 + §4 對應 TODO §3</td><td>Persona 萃取細但死板 → improve 回應品質</td></tr>
+    <tr><td>本報告 §3 對應 TODO §2</td><td>查 nuwa 萃取 skill 最新狀態（v4 draft 已找到，等 Iven 給宋晏仁產出）</td></tr>
+    <tr><td>本報告 evaluation-driven approach 對應 TODO §4</td><td>Personal Wiki = 為 AIGC 品質與 Digital Twin 服務（frown corpus 是 wiki 的 raw source 之一）</td></tr>
+  </tbody>
+</table>
+
+<div class="footer-nav">
+  相關檔：<br>
+  → <code>10-TODO-2026-06-20.md</code>（今日 TODO 主清單）<br>
+  → <code>09-Dogfood-ThinkAloud-2026-06-20.md</code>（dogfood 觀察）<br>
+  → <code>08-URLs-and-Resources.md</code>（URL + 帳密位置）<br>
+  → <code>~/Jottacloud/vibe/qoome/iven-persona-extraction-prompt-v4-draft.md</code>（nuwa v4 source）<br>
+  → <code>~/Jottacloud/vibe/creative-content-generator/README.md</code>（POC 方法論借鏡）<br><br>
+  Refs：<br>
+  → <a href="https://arxiv.org/abs/2509.14543">Catch Me If You Can? Not Yet（EMNLP 2025）</a><br>
+  → <a href="https://arxiv.org/abs/2507.21509">Persona Vectors（Anthropic 2025-07）</a><br>
+  → <a href="https://arxiv.org/abs/2603.23069">AuthorMix（2026-03）</a><br>
+  → <a href="https://arxiv.org/abs/2601.22288">PersonaCite（2026-01）</a><br>
+  → <a href="https://www.youtube.com/watch?v=PpeCur6fEXc">Gary Talks Stuff — AI agent 連續 27 小時</a>
+</div>
+
+</div>
+</body>
+</html>

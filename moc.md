@@ -16,7 +16,8 @@ updated: 2026-06-08 / **catch-up 2026-06-19**
 |---|---|
 | [架構圖（主檔）](index.html) | 一張統一架構圖 + 可展開細節 + Phase 1 TODO（待解決問題清單 + ✅ Iven 答覆 block） |
 | [術語表](glossary.html) | Edge / Persona / Soul / Skill / Personal-wiki 等核心名詞 |
-| [catch-up-2026-06-19](catch-up-2026-06-19.md) | **新增**：12 條理解誤解 audit + TODO 對齊 + Iven chat / commits 摘要 |
+| [catch-up-2026-06-19](catch-up-2026-06-19.md) | 12 條理解誤解 audit + TODO 對齊 + Iven chat / commits 摘要 |
+| [Persona Stack 分析報告（2026-06-20）](style-analysis-2026-06-20.html) | **新增**：顯性 vs 隱性風格框架 / my18.cc 診斷 / nuwa v4 對照 / Creative generator 借鏡 / 兩階段提案 |
 | 本檔（moc.md） | 總覽入口 |
 
 ## Phase 1 核心理解
