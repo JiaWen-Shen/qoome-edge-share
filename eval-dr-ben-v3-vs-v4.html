@@ -234,7 +234,7 @@
   }
   .summary-modal.hidden { display: none; }
   .summary-modal-content {
-    background: white; border-radius: 8px; padding: 24px;
+    background: white; border-radius: 8px; padding: 24px 24px 0;
     max-width: 1000px; width: 92%; max-height: 88vh; overflow-y: auto;
     position: relative;
   }
@@ -264,26 +264,27 @@
     margin: 24px -24px 0; padding: 14px 24px;
     background: var(--accent-soft);
     border-top: 1px solid var(--accent);
+    border-radius: 0 0 8px 8px;
     box-shadow: 0 -4px 12px rgba(0,0,0,0.06);
     z-index: 4;
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
   }
-  .summary-submit-bar button {
+  .summary-submit-bar .submit-main { flex: 1 1 auto; min-width: 240px; }
+  .summary-submit-bar .submit-aux { display: flex; gap: 8px; }
+  .summary-submit-bar button#submit-btn {
     padding: 10px 18px; background: var(--accent); color: white;
     border: none; border-radius: 4px; font-size: 14px; font-weight: 600;
     cursor: pointer;
   }
-  .summary-submit-bar button:disabled {
+  .summary-submit-bar button#submit-btn:disabled {
     opacity: 0.5; cursor: not-allowed;
   }
-  .summary-modal-actions {
-    margin-top: 16px; display: flex; gap: 10px; justify-content: flex-end;
-  }
-  .summary-modal-actions button {
+  .summary-submit-bar .submit-aux button {
     padding: 8px 14px; border: 1px solid var(--border);
-    border-radius: 4px; cursor: pointer; background: white;
+    border-radius: 4px; cursor: pointer; background: white; font-size: 13px;
   }
-  .summary-modal-actions button.primary {
-    background: var(--accent); color: white; border-color: var(--accent);
+  .summary-submit-bar .submit-aux button.primary {
+    background: white; color: var(--fg); border-color: var(--border);
   }
 </style>
 </head>
@@ -314,16 +315,15 @@
     <h2 style="margin-top:0;">評分結果 + Unblind</h2>
     <div id="summary-body"></div>
     <div class="summary-submit-bar">
-      <strong>📤 提交評分</strong>
-      <div style="margin: 8px 0;">
+      <div class="submit-main">
         <button id="submit-btn" onclick="submitToKaren()">提交結果</button>
+        <div id="submit-status" style="font-size: 12px; color: var(--muted); margin-top: 6px;">點按鈕一鍵送出 · 失敗可用右側「下載 JSON」手動傳</div>
       </div>
-      <div id="submit-status" style="font-size: 13px; color: var(--muted);">點上方按鈕一鍵送出 · 失敗的話可改用下方下載 JSON 手動傳</div>
-    </div>
-    <div class="summary-modal-actions">
-      <button onclick="downloadJSON()">下載 JSON</button>
-      <button onclick="copyJSON()">複製 JSON</button>
-      <button class="primary" onclick="hideSummary()">關閉</button>
+      <div class="submit-aux">
+        <button onclick="downloadJSON()">下載 JSON</button>
+        <button onclick="copyJSON()">複製 JSON</button>
+        <button class="primary" onclick="hideSummary()">關閉</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1090,7 +1090,7 @@ function updateSubmitBarState() {
   btn.disabled = empty;
   st.innerHTML = empty
     ? "⚠️ 請先在頂部填寫「評分者」名字，再回來提交"
-    : "點上方按鈕一鍵送出 · 失敗的話可改用下方下載 JSON 手動傳";
+    : "點按鈕一鍵送出 · 失敗可用右側「下載 JSON」手動傳";
   st.style.color = empty ? "var(--warn, #c00)" : "var(--muted)";
 }
 
@@ -1174,7 +1174,7 @@ async function submitToKaren() {
       throw new Error(result.error || "未知錯誤");
     }
   } catch (err) {
-    status.innerHTML = `❌ 提交失敗：${escapeHtml(err.message)}<br>請改點下方「下載 JSON」傳給 Karen（Email: kevenkmupsy@gmail.com）`;
+    status.innerHTML = `❌ 提交失敗：${escapeHtml(err.message)}<br>請改點右側「下載 JSON」傳給 Karen（Email: kevenkmupsy@gmail.com）`;
     status.style.color = "var(--warn)";
     btn.disabled = false;
     btn.style.opacity = "1";
