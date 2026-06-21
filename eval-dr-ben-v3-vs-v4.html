@@ -266,7 +266,7 @@
 <header>
   <div>
     <h1>Dr-Ben v3 vs v4 — 盲測評分 v2</h1>
-    <div class="meta">A/B 隨機盲標 · 7 維 + recall + scenario + meta · 完成後請點「查看結果」→ 下載 JSON 回傳給 Karen</div>
+    <div class="meta">A/B 隨機盲標 · 7 維 + recall + scenario + meta · 完成後點「查看結果」→「🚀 自動提交」</div>
   </div>
   <div class="controls">
     <label class="meta">評分者：
@@ -295,6 +295,9 @@
 </div>
 
 <script>
+// ============ CONFIG ============
+const SUBMIT_ENDPOINT = "https://script.google.com/macros/s/AKfycbwa8Kid6hwS45y9UnnULMwoj6fuboXGSoi5JQlUJopfgcQr60mczakwnlTBEmTm8BWU/exec";
+
 // ============ DATA ============
 const TOPICS = [
   {
@@ -980,10 +983,12 @@ function showSummary() {
   const m = state.meta;
 
   body.innerHTML = `
-    <div style="background: var(--warn-soft); border: 1px solid var(--warn); padding: 12px 16px; border-radius: 4px; margin-bottom: 16px;">
-      <strong>📤 回傳方式</strong><br>
-      點下方「下載 JSON」存檔 → 透過 Telegram / Email / Slack 傳給 Karen<br>
-      <small style="color: var(--muted);">（Email: kevenkmupsy@gmail.com · 評分資料目前只在你瀏覽器，不會自動上傳）</small>
+    <div style="background: var(--accent-soft); border: 1px solid var(--accent); padding: 14px 16px; border-radius: 4px; margin-bottom: 16px;">
+      <strong>📤 提交評分</strong><br>
+      <div style="margin: 10px 0;">
+        <button id="submit-btn" onclick="submitToKaren()" style="padding: 10px 18px; background: var(--accent); color: white; border: none; border-radius: 4px; font-size: 14px; font-weight: 600; cursor: pointer;">🚀 自動提交給 Karen</button>
+      </div>
+      <div id="submit-status" style="font-size: 13px; color: var(--muted);">點上方按鈕一鍵送出 · 失敗的話可改用下方下載 JSON 手動傳</div>
     </div>
     <p><strong>評分者</strong>：${escapeHtml(state.rater || "（未填）")} ·
        <strong>整體偏好</strong>：v4 勝 ${v4Pref} · v3 勝 ${v3Pref} · 平手 ${ties}</p>
@@ -1089,6 +1094,40 @@ function downloadJSON() {
 function copyJSON() {
   navigator.clipboard.writeText(JSON.stringify(buildExport(), null, 2));
   alert("已複製到剪貼簿");
+}
+
+async function submitToKaren() {
+  const btn = document.getElementById("submit-btn");
+  const status = document.getElementById("submit-status");
+  if (!state.rater || !state.rater.trim()) {
+    status.innerHTML = "⚠️ 請先在頂部填寫「評分者」名字再提交";
+    status.style.color = "var(--warn)";
+    return;
+  }
+  btn.disabled = true;
+  btn.style.opacity = "0.6";
+  status.innerHTML = "⏳ 提交中...";
+  status.style.color = "var(--muted)";
+  try {
+    const res = await fetch(SUBMIT_ENDPOINT, {
+      method: "POST",
+      redirect: "follow",
+      body: JSON.stringify(buildExport())
+    });
+    const result = await res.json();
+    if (result.ok) {
+      status.innerHTML = `✅ 提交成功！Karen 會在 Google Sheet 看到你的評分。<br><small>收件時間：${result.received_at}</small>`;
+      status.style.color = "var(--accent)";
+      btn.textContent = "✅ 已提交";
+    } else {
+      throw new Error(result.error || "未知錯誤");
+    }
+  } catch (err) {
+    status.innerHTML = `❌ 提交失敗：${escapeHtml(err.message)}<br>請改點下方「下載 JSON」傳給 Karen（Email: kevenkmupsy@gmail.com）`;
+    status.style.color = "var(--warn)";
+    btn.disabled = false;
+    btn.style.opacity = "1";
+  }
 }
 
 function render() {
