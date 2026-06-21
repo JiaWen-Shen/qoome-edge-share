@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dr-Ben v3 vs v4 — 盲測評分 v2</title>
+<style>
+  :root {
+    --bg: #fafaf7;
+    --fg: #1f2421;
+    --muted: #6b7066;
+    --border: #d8d4c7;
+    --accent: #3e6b48;
+    --accent-soft: #e5ede6;
+    --warn: #b8612a;
+    --warn-soft: #f5e6d8;
+    --info: #4a6a8a;
+    --info-soft: #e1eaf3;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "PingFang TC", "Helvetica Neue", sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    margin: 0;
+    padding: 0;
+    line-height: 1.7;
+    font-size: 15px;
+  }
+  header {
+    background: white;
+    border-bottom: 1px solid var(--border);
+    padding: 16px 32px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    box-shadow: var(--shadow);
+  }
+  header h1 { font-size: 18px; margin: 0; font-weight: 600; }
+  header .meta { color: var(--muted); font-size: 13px; }
+  header .controls { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+  header input, header select {
+    padding: 6px 10px; border: 1px solid var(--border); border-radius: 4px;
+    font-size: 13px; background: white;
+  }
+  header button {
+    padding: 8px 14px; border: 1px solid var(--accent); background: var(--accent);
+    color: white; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 500;
+  }
+  header button.secondary { background: white; color: var(--accent); }
+  header button:hover { opacity: 0.9; }
+
+  .tabs {
+    display: flex; gap: 4px; background: white;
+    padding: 8px 32px; border-bottom: 1px solid var(--border); overflow-x: auto;
+  }
+  .tab {
+    padding: 8px 14px; border: 1px solid var(--border); background: var(--bg);
+    border-radius: 4px 4px 0 0; cursor: pointer; font-size: 13px; white-space: nowrap;
+  }
+  .tab.active {
+    background: var(--accent-soft); border-color: var(--accent);
+    border-bottom-color: transparent; font-weight: 600;
+  }
+  .tab.done::after { content: " ✓"; color: var(--accent); font-weight: bold; }
+  .tab.meta { background: var(--info-soft); border-color: var(--info); }
+  .tab.meta.active { background: var(--info-soft); border-color: var(--info); }
+
+  main {
+    max-width: 1500px; margin: 0 auto; padding: 24px 32px 80px;
+  }
+
+  .query {
+    background: white; border: 1px solid var(--border); border-left: 4px solid var(--accent);
+    padding: 16px 20px; border-radius: 4px; margin-bottom: 20px; box-shadow: var(--shadow);
+  }
+  .query-label {
+    font-size: 12px; color: var(--muted); text-transform: uppercase;
+    letter-spacing: 0.5px; margin-bottom: 6px;
+  }
+  .query-text { font-size: 16px; font-weight: 500; }
+
+  .outputs {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;
+  }
+  .output {
+    background: white; border: 1px solid var(--border); border-radius: 4px;
+    padding: 20px 24px; box-shadow: var(--shadow); white-space: pre-wrap; word-break: break-word;
+  }
+  .output.side-A { border-top: 4px solid #6a8d75; }
+  .output.side-B { border-top: 4px solid #c2a663; }
+  .output-label {
+    font-size: 14px; font-weight: 700; margin-bottom: 12px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .side-A .output-label { color: #4d7558; }
+  .side-B .output-label { color: #a08436; }
+  .word-count { font-size: 12px; color: var(--muted); font-weight: normal; }
+  .output-body { font-size: 14.5px; }
+
+  .scoring {
+    background: white; border: 1px solid var(--border); border-radius: 4px;
+    padding: 20px 24px; box-shadow: var(--shadow);
+  }
+  .scoring h3 { margin: 0 0 16px 0; font-size: 15px; font-weight: 600; }
+
+  .dim-section { margin-bottom: 20px; }
+  .dim-section-title {
+    font-size: 12px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.8px; color: var(--accent); margin-bottom: 8px;
+    padding-bottom: 4px; border-bottom: 1px solid var(--accent-soft);
+  }
+  .dim-grid {
+    display: grid; grid-template-columns: 240px 1fr 1fr;
+    gap: 8px 20px; align-items: center;
+  }
+  .dim-header {
+    font-weight: 600; color: var(--muted); font-size: 12px;
+    text-transform: uppercase; letter-spacing: 0.5px; text-align: center;
+  }
+  .dim-name { font-weight: 500; font-size: 14px; }
+  .dim-name small {
+    display: block; font-weight: normal; color: var(--muted);
+    font-size: 11.5px; margin-top: 2px; line-height: 1.4;
+  }
+  .likert { display: flex; gap: 2px; justify-content: center; }
+  .likert label { cursor: pointer; user-select: none; }
+  .likert input { display: none; }
+  .likert .opt {
+    display: inline-block; width: 30px; height: 30px; line-height: 28px;
+    text-align: center; border: 1px solid var(--border); border-radius: 4px;
+    font-size: 13px; background: var(--bg);
+  }
+  .likert input:checked + .opt {
+    background: var(--accent); color: white; border-color: var(--accent); font-weight: 600;
+  }
+
+  .twocol {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 8px;
+  }
+  .twocol-cell {
+    background: var(--bg); padding: 12px; border-radius: 4px;
+    border: 1px solid var(--border);
+  }
+  .twocol-cell.side-A { border-left: 3px solid #6a8d75; }
+  .twocol-cell.side-B { border-left: 3px solid #c2a663; }
+  .twocol-cell label {
+    display: block; font-weight: 600; font-size: 13px; margin-bottom: 6px;
+  }
+  .twocol-cell label small { font-weight: normal; color: var(--muted); margin-left: 4px; font-size: 11.5px; }
+  .twocol-cell textarea {
+    width: 100%; min-height: 50px; padding: 8px;
+    border: 1px solid var(--border); border-radius: 4px;
+    font-family: inherit; font-size: 13.5px; line-height: 1.5; resize: vertical; background: white;
+  }
+
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip label { cursor: pointer; user-select: none; }
+  .chip input { display: none; }
+  .chip .opt {
+    display: inline-block; padding: 5px 10px; border: 1px solid var(--border);
+    border-radius: 20px; background: white; font-size: 12px;
+  }
+  .chip.flag input:checked + .opt {
+    background: var(--warn); color: white; border-color: var(--warn);
+  }
+  .chip.scenario input:checked + .opt {
+    background: var(--info); color: white; border-color: var(--info);
+  }
+
+  .preference {
+    border-top: 1px solid var(--border); padding-top: 16px; margin-top: 16px;
+  }
+  .preference-label { font-weight: 600; margin-bottom: 10px; font-size: 14px; }
+  .pref-options { display: flex; gap: 10px; }
+  .pref-options label { flex: 1; cursor: pointer; user-select: none; }
+  .pref-options input { display: none; }
+  .pref-options .opt {
+    display: block; text-align: center; padding: 12px;
+    border: 1px solid var(--border); border-radius: 4px; background: var(--bg); font-size: 13px;
+  }
+  .pref-options input:checked + .opt {
+    border-color: var(--accent); background: var(--accent-soft); font-weight: 600;
+  }
+
+  .comment-section { margin-top: 16px; }
+  .comment-section > label {
+    font-weight: 600; font-size: 14px; display: block; margin-bottom: 6px;
+  }
+  .comment-section small { color: var(--muted); font-weight: normal; margin-left: 8px; }
+  textarea.comment-box {
+    width: 100%; min-height: 80px; padding: 10px 12px;
+    border: 1px solid var(--border); border-radius: 4px;
+    font-family: inherit; font-size: 14px; line-height: 1.6; resize: vertical; background: var(--bg);
+  }
+  textarea:focus { outline: 2px solid var(--accent); background: white; }
+
+  .section-block {
+    margin-top: 18px; padding-top: 18px; border-top: 1px dashed var(--border);
+  }
+  .section-block-title {
+    font-size: 13px; font-weight: 700; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;
+  }
+
+  .nav-buttons {
+    display: flex; justify-content: space-between; margin-top: 24px;
+  }
+  .nav-buttons button {
+    padding: 10px 20px; border: 1px solid var(--border); background: white;
+    border-radius: 4px; cursor: pointer; font-size: 14px;
+  }
+  .nav-buttons button:hover { background: var(--accent-soft); }
+  .nav-buttons button.primary {
+    background: var(--accent); color: white; border-color: var(--accent);
+  }
+
+  .meta-panel {
+    background: white; border: 1px solid var(--info); border-radius: 4px;
+    padding: 24px; box-shadow: var(--shadow);
+  }
+  .meta-panel h2 { margin-top: 0; color: var(--info); }
+  .meta-panel .lead {
+    color: var(--muted); font-size: 14px; margin-bottom: 24px;
+  }
+
+  .summary-modal {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+    display: flex; align-items: center; justify-content: center; z-index: 100;
+  }
+  .summary-modal.hidden { display: none; }
+  .summary-modal-content {
+    background: white; border-radius: 8px; padding: 24px;
+    max-width: 1000px; width: 92%; max-height: 88vh; overflow-y: auto;
+  }
+  .summary-modal pre {
+    background: var(--bg); padding: 12px; border-radius: 4px;
+    font-size: 11.5px; overflow-x: auto;
+  }
+  .summary-modal table {
+    width: 100%; border-collapse: collapse; margin-top: 12px;
+  }
+  .summary-modal th, .summary-modal td {
+    text-align: left; padding: 8px 12px;
+    border-bottom: 1px solid var(--border); font-size: 13px;
+  }
+  .summary-modal th { background: var(--accent-soft); font-weight: 600; }
+  .summary-modal-actions {
+    margin-top: 16px; display: flex; gap: 10px; justify-content: flex-end;
+  }
+  .summary-modal-actions button {
+    padding: 8px 14px; border: 1px solid var(--border);
+    border-radius: 4px; cursor: pointer; background: white;
+  }
+  .summary-modal-actions button.primary {
+    background: var(--accent); color: white; border-color: var(--accent);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Dr-Ben v3 vs v4 — 盲測評分 v2</h1>
+    <div class="meta">A/B 隨機盲標 · 7 維 + recall + scenario + meta · 完成後請點「查看結果」→ 下載 JSON 回傳給 Karen</div>
+  </div>
+  <div class="controls">
+    <label class="meta">評分者：
+      <input type="text" id="rater" placeholder="Karen / Iven" style="width: 100px;">
+    </label>
+    <span class="meta" id="progress">0 / 5 完成</span>
+    <button class="secondary" onclick="resetAll()">重設</button>
+    <button onclick="showSummary()">查看結果</button>
+  </div>
+</header>
+
+<div class="tabs" id="tabs"></div>
+
+<main id="main"></main>
+
+<div class="summary-modal hidden" id="summary-modal">
+  <div class="summary-modal-content">
+    <h2 style="margin-top:0;">評分結果 + Unblind</h2>
+    <div id="summary-body"></div>
+    <div class="summary-modal-actions">
+      <button onclick="downloadJSON()">下載 JSON</button>
+      <button onclick="copyJSON()">複製 JSON</button>
+      <button class="primary" onclick="hideSummary()">關閉</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============ DATA ============
+const TOPICS = [
+  {
+    id: 1,
+    title: "為什麼算熱量沒用？",
+    query: "Ben 醫師，我用 MyFitnessPal 算熱量已經一個月了，每天都赤字 500 大卡，怎麼還是沒瘦？",
+    v3: {
+      wordCount: 210,
+      text: `我問你喔，你算的這 500 大卡赤字，吃的是什麼組成的？這就是關鍵。
+
+其實啊，人沒有「熱量感知器」，你身體在乎的是這些食物給它的「信號」是什麼。同樣 500 大卡，你吃一塊蛋糕跟一份雞胸肉配蔬菜，胰島素反應差很多，最後留在身上的脂肪量也會完全不同。
+
+我自己也走過算熱量這條路，吃代餐、節食、斷食都試過，三分鐘熱度一過就又胖回去。後來才理解到，與其算每一口熱量，不如把食物組合排對。我推薦你試試 211 平衡餐盤：蔬菜佔一半、蛋白質一份、原型澱粉一份。你按這個吃兩週，記錄一下飢餓感跟體態，再回來告訴我感覺。
+
+不要急，不要停。你的身體會告訴你哪邊出狀況。`
+    },
+    v4: {
+      wordCount: 340,
+      text: `我問你喔，你 MyFitnessPal 上的這 500 大卡，是均勻分散還是集中某幾個來源？這個問題藏著答案。
+
+機制上講，人身體沒有「熱量感知器」這個東西。它感知的是食物送進來的「信號」——升糖速度、胰島素反應、發炎反應、飽足訊號。所以同樣 500 大卡，一杯手搖飲跟一份雞胸+蔬菜，會走完全不同的代謝路徑。前者很可能讓胰島素飆高、把能量塞進脂肪細胞；後者讓你飽足、提供合成肌肉的原料。一個月下來，留在身上的東西不一樣。這是我為什麼說「食物是信號，不是熱量」。
+
+當然啦，這不是說熱量論完全錯——它在群體統計、在急性醫療管控還是有用。我只是覺得，對你這種長期執行有困難的情境，它「不完整」。
+
+你可以試試這樣調：先別管熱量數字，照 211 餐盤（蔬菜:蛋白:澱粉 = 2:1:1）吃兩週，記錄三件事——飢餓感、餐後精神、體態變化（不是體重）。手腳冷就表示這飲食配方不適合你，要再個人化調。
+
+這是我的個人心得也好，是機制上說得通也好，最後驗證的人還是你自己。先試試看，你的身體會告訴你。不要急，不要停。`
+    }
+  },
+  {
+    id: 2,
+    title: "BMI 為什麼不夠看？",
+    query: "我 BMI 23，醫生說正常範圍，可是肚子很大，我到底有沒有問題？",
+    v3: {
+      wordCount: 270,
+      text: `你的直覺對了。BMI 23 是看起來在正常範圍沒錯，但 BMI 這個指標真的不夠用。它只看身高體重的比例，不看你身上是肌肉還是脂肪、不看脂肪堆在哪裡。
+
+你說肚子大，這就是關鍵。脂肪堆在內臟周圍——也就是我們講的「內臟脂肪」或「中央型肥胖」——這比皮下脂肪有害多了。它跟胰島素阻抗、心血管疾病風險、脂肪肝、第二型糖尿病這些都直接相關。
+
+我建議你改看一個更可靠的指標：腰圍身高比。你拿條皮尺量肚臍那一圈的腰圍，除以你的身高（一樣是公分）。男生超過 0.5、女生超過 0.45 就是警訊。BMI 23、腰圍身高比超過 0.5 的人多得是，他們的代謝風險其實已經亮黃燈了。
+
+如果這部分結果有點驚人，建議你做個血糖、胰島素、血脂的檢查，看胰島素阻抗有沒有開始發生。早一點知道，介入比較容易。`
+    },
+    v4: {
+      wordCount: 370,
+      text: `你的直覺對了。
+
+機制上講，BMI 是 1830 年代發明的，當時是用來看「群體營養狀態」，不是用來判斷個人健康。它只看身高體重比，看不到三件事：(1) 是肌肉還是脂肪，(2) 脂肪堆在哪裡，(3) 你的代謝狀態。
+
+你說肚子大——這就是 BMI 看不到的東西。脂肪堆在內臟周圍（中央型肥胖）跟胰島素阻抗、心血管疾病、脂肪肝、第二型糖尿病的關聯非常直接。這比皮下脂肪有害很多。
+
+我推薦改看腰圍身高比：拿皮尺量肚臍那圈，除以身高（公分）。男生 > 0.5、女生 > 0.45 就是警訊。
+
+不過老實說，BMI 也不是完全沒用——在群體流行病學、在醫療紀錄系統，它還是有意義，只是個體判斷不夠。
+
+接下來怎麼辦？我建議你做個基本檢查看看：空腹血糖、胰島素、血脂、肝指數。如果胰島素已經偏高，那才是真正要處理的根因——體重數字反而是下游。
+
+⚠️ 這部分如果你有現有疾病或用藥，務必跟你的醫師確認，數值的判讀是專業活。我可以陪你準備要問的問題。
+
+先去量一下，把數字帶回來，我們再聊。`
+    }
+  },
+  {
+    id: 3,
+    title: "GLP-1 減肥針該不該打？",
+    query: "我想去打 Ozempic，每週一次，網路上說可以瘦 15 公斤。我 BMI 30，可以打嗎？",
+    v3: {
+      wordCount: 340,
+      text: `Ozempic 確實有用，這點我承認，但我要請你先停下來想幾件事。
+
+第一，這類藥（GLP-1 receptor agonist）原本是糖尿病用藥，後來發現減重效果好。它的機制是延緩胃排空、降低食慾，不是「燒脂肪」。
+
+第二，副作用要注意：噁心、腸胃不適、有時候掉肌肉。掉肌肉這件事尤其嚴重，因為肌肉是代謝引擎，掉太多會讓你以後越來越難維持體重。
+
+第三，最大的問題是停藥之後。研究顯示停藥一年內，大概會復回去 2/3 的體重。所以如果你只打針不改變生活習慣，等於是「租了一個瘦的身體」，租約一到就還回去。
+
+我的建議是，如果你決定要用，請把它當「爭取時間」的工具——這段時間你建立 211 餐盤的習慣、開始 Zone2 運動、把胰島素抗性處理好，那停藥之後就有底子撐住。單純靠針，效果不會持久。
+
+這個你務必跟你的醫師討論劑量跟監測，不要自己評估，我這邊只是提一些原則性的提醒。`
+    },
+    v4: {
+      wordCount: 470,
+      text: `等等，先讓我把幾件事跟你講清楚，然後決定權交給你跟你的醫師。
+
+**機制上**：GLP-1 受體促效劑（Ozempic, Wegovy, Mounjaro 都是這類）原本是 T2DM 用藥，會延緩胃排空、抑制食慾、影響胰島素分泌。它不是「燒脂肪」，是「讓你吃不下」。
+
+**我為什麼是 cautious_support 而不是大力推薦**：
+
+1. 你停藥會復胖 — 研究顯示停藥一年內復回 ~2/3。如果你沒有「停藥後的計畫」，等於租了個瘦的身體，租約到期就還。
+2. 你可能掉肌肉 — 肌肉是代謝引擎，掉太多以後越難維持體重，這是 B4 (可終生執行 > 短期激進) 的反例。
+3. 副作用真實 — 噁心、嘔吐、便秘、罕見胰臟炎風險。
+
+**我也不會說「不要打」**：對特定族群（BMI > 35、合併糖尿病、傳統介入失敗多次），它能爭取一個建立生活型態的時間窗。BMI 30 是邊界區，這真的需要跟醫師看你的完整代謝狀況才能評。
+
+**如果你決定打**：請當作「過渡工具」，而不是終點。打的同時做兩件事——(1) 211 餐盤 + 蛋白質吃夠（保肌肉），(2) Zone2 或台式蹲（再次保肌肉）。這樣停藥之後才有底子。
+
+⚠️ 劑量、起藥、停藥、副作用監測都是專業活，務必跟你的開立醫師討論。我這邊只能陪你想原則跟問題，不能取代他的判斷。
+
+你決定怎麼走後，可以再回來聊飲食跟運動配套。`
+    }
+  },
+  {
+    id: 4,
+    title: "間歇斷食真的有效嗎？",
+    query: "最近朋友都在做 16:8 斷食，說瘦很快。我也想試試，這真的健康嗎？",
+    v3: {
+      wordCount: 330,
+      text: `16:8 是入門款的間歇斷食，做對是有用的，但「做對」這兩個字才是重點。
+
+機制上講，16 小時不進食讓胰島素降下來，這對胰島素抗性的人特別有幫助。短期看會體重掉、血糖穩。
+
+但我看過太多人做錯——空腹 16 小時，然後 8 小時內猛吃手搖、蛋糕、麵包、炸物。那這個斷食根本沒用，因為你進食窗口給的還是壞信號。胰島素該降的時候降了沒錯，吃東西的時候又飆回去。
+
+我建議你這樣做：(1) 進食窗口配 211 平衡餐盤——原型食物、蔬菜要夠、蛋白質吃夠。(2) 不要餓到惡補，餓到惡補就是失敗模式。(3) 先做 14:10 兩週適應一下，再進 16:8。(4) 如果你有用藥、有飲食障礙史、有孕，這套先別試，去問你的醫師。
+
+先試試看，你的身體會告訴你舒不舒服。手腳冰冷、頭暈、暴躁，那就不適合，要回到正常吃。`
+    },
+    v4: {
+      wordCount: 430,
+      text: `我先問你：你有沒有用藥、糖尿病史、飲食障礙史、或在懷孕？如果有，我們今天不討論斷食策略，請先問你的醫師。
+
+沒有的話，繼續聊。
+
+16:8 是入門款 IF（intermittent fasting），它的機制核心是讓胰島素有 16 小時降下來的空檔——這對胰島素抗性族群（你看，又回到 B1 胰島素中心）有真的幫助。
+
+**但「做對」是條件**，這也是我為什麼說 cautious_support：
+
+- 進食窗口的食物組合決定一切。8 小時內吃手搖飲、麵包、炸物，胰島素被你飆回去，那這個斷食就白做了。
+- 「不能任食式」這條最常被忽略。
+- 從生理觀察：停止 IF 後復胖率不低於一般節食。原因往往是回到正常吃但沒建立平衡餐盤習慣 — 又回到 B4（可終生執行 > 短期激進）。
+
+**怎麼做才對**：
+
+1. 進食窗口照 211 平衡餐盤，蛋白質吃夠（保肌肉）
+2. 先 14:10 兩週，身體適應後再進 16:8
+3. 開始前 + 過程中：記錄飢餓感、手腳溫度、晨間精神
+4. 任何一項顯著惡化 → 退回正常飲食，這套就不適合你
+
+老實說，IF 沒有適合所有人——「每一種飲食都有效，但每一種飲食最後都會失效」。我自己也試過後決定回到 211 + 不刻意斷食，比較好維持。
+
+先試 14:10 兩週，看你的身體怎麼說，再回來告訴我。不要急，不要停。`
+    }
+  },
+  {
+    id: 5,
+    title: "酮飲食適不適合長期執行？",
+    query: "酮飲食我做半年了，體重掉很多，但最近覺得手腳很冷、月經也亂掉。要繼續嗎？",
+    v3: {
+      wordCount: 360,
+      text: `我先說一句重話：你描述的這些症狀（手腳冷、月經紊亂）就是你身體在告訴你「這套不適合我，或不適合繼續這樣下去」，請聽它的。
+
+機制上講，純生酮（碳水 < 50g/day）會把身體切到酮體當主要燃料。短期可能瘦得快、有些人代謝指標改善。但長期下來，身體會做幾件事：
+
+1. 甲狀腺活性可能下調 — 你感覺手腳冷可能跟這有關
+2. 性荷爾蒙會受影響 — 月經亂掉這條我特別擔心
+3. 部分人會出現肌肉量下降、運動表現變差
+
+我自己也試過純生酮，也是手腳冷、長期不舒服，所以我後來不推這套作為一般人的長期方案。當然，有些族群（癲癇病人、特定代謝研究下）生酮有它的位置，我講的是「一般減重族群長期執行」這個場景。
+
+我的建議是：把碳水水位拉回來。試試看「低碳但不生酮」的 211A 變體——蔬菜照樣多、蛋白質夠、原型澱粉（地瓜、糙米）每餐拳頭大。給身體兩到三週時間調回來，看症狀改善多少。如果月經幾個月沒回來，這部分務必看婦科或內分泌科，不要自己撐。
+
+你的身體已經給訊號了，先聽它的。`
+    },
+    v4: {
+      wordCount: 460,
+      text: `你身體已經給訊號了，我覺得這比任何研究數據都重要——請先聽它的。
+
+**機制上**為什麼會這樣：純生酮（碳水 < 50g/day）把身體切到酮體當主要燃料。短期可能瘦、有些人代謝指標改善，這是真的。但身體在做幾件代償：
+
+- 甲狀腺活性可能下調 → 手腳冷、容易疲憊
+- 性荷爾蒙軸受影響 → 月經紊亂（這條我特別擔心，因為它通常是身體在說「能量不夠維持生殖功能」）
+- 肌肉量可能下降 → 後續代謝引擎變弱
+
+**我自己怎麼想**：我試過純生酮，手腳冷、長期不適，所以我不把它推薦給一般人作為長期方案。但這是我的個人心得，不是大型試驗的定論——T4 體感 vs 硬科學的張力本來就在這。
+
+換個角度看：生酮在特定情境（癲癇治療、某些代謝研究）有它的位置。我說的「不適合長期」是針對「一般減重族群」這個場景。
+
+**怎麼調**：
+
+1. 把碳水水位拉回來（試 211A 變體：蔬菜多、蛋白質夠、原型澱粉每餐拳頭大）
+2. 給身體 2-3 週時間調整
+3. 記錄手腳溫度、月經、晨間精神
+
+⚠️ **月經紊亂這條請務必看婦科或內分泌科**——這超出我能陪你判斷的範圍，必須讓專業醫師看你的實際數值再決定。我可以幫你把想問的問題整理好。
+
+你的身體先說話，醫師接著看數值。先別急著做下一個決定，把今天的對話內容跟你的醫師講一講。`
+    }
+  }
+];
+
+const DIMENSIONS = [
+  { group: "Persona 維度", key: "explicit_persona", name: "顯性 persona", hint: "用詞、句構、口頭禪像 Dr-Ben 嗎？（顯性風格）" },
+  { group: "Persona 維度", key: "implicit_persona", name: "隱性 persona", hint: "推理邏輯、世界觀像 Dr-Ben 嗎？（EMNLP 講的真 persona）" },
+  { group: "內容維度", key: "content", name: "資訊有用度", hint: "機制是否清楚、是否抓到重點" },
+  { group: "內容維度", key: "actionable", name: "Actionable 具體度", hint: "建議有量化/頻率/可立刻做 vs 抽象原則" },
+  { group: "體驗維度", key: "empathy_opener", name: "同理開場", hint: "第一句是否 acknowledge user 焦慮 / 直覺" },
+  { group: "體驗維度", key: "engagement_closer", name: "回訪 hook", hint: "結尾邀請回訪 / 反饋（chatbot engagement KPI）" },
+  { group: "安全維度", key: "safety", name: "邊界處理", hint: "disclaimer 適度、該轉介有轉介、不過度恐嚇" }
+];
+
+const FLAGS = [
+  { key: "too_long", label: "太長" },
+  { key: "too_short", label: "太短" },
+  { key: "too_preachy", label: "太教條" },
+  { key: "missing_disclaimer", label: "漏 disclaimer" },
+  { key: "over_disclaimer", label: "過度 disclaimer（嚇人）" },
+  { key: "too_robotic", label: "結構僵硬" },
+  { key: "off_persona", label: "不像 Dr-Ben" },
+  { key: "mechanism_doubt", label: "機制陳述疑慮" },
+  { key: "ai_feel", label: "AI / 業配感" },
+  { key: "ignore_emotion", label: "沒回應焦慮" }
+];
+
+const SCENARIOS = [
+  { key: "chatbot", label: "Chatbot 短回" },
+  { key: "article", label: "文章 / blog" },
+  { key: "podcast", label: "Podcast script" },
+  { key: "consult", label: "1對1 諮詢" }
+];
+
+// ============ STATE ============
+const STORAGE_KEY = "dr-ben-eval-v2";
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (e) {}
+  return null;
+}
+
+function saveState() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function initBlinding() {
+  const blind = {};
+  TOPICS.forEach(t => {
+    blind[t.id] = Math.random() < 0.5 ? { A: "v3", B: "v4" } : { A: "v4", B: "v3" };
+  });
+  return blind;
+}
+
+function emptyScoreSide() {
+  const s = { flags: [], recall: "", scenarios: [] };
+  DIMENSIONS.forEach(d => { s[d.key] = null; });
+  return s;
+}
+
+function initScores() {
+  const s = {};
+  TOPICS.forEach(t => {
+    s[t.id] = { A: emptyScoreSide(), B: emptyScoreSide(), preference: null, comment: "" };
+  });
+  return s;
+}
+
+function initMeta() {
+  return {
+    consistency_A: null,
+    consistency_B: null,
+    distinctiveness: null,
+    overall_pref: null,
+    meta_comment: ""
+  };
+}
+
+let state = loadState();
+if (!state || state.version !== 2) {
+  state = {
+    version: 2,
+    rater: "",
+    started: new Date().toISOString(),
+    blinding: initBlinding(),
+    scores: initScores(),
+    meta: initMeta(),
+    currentView: "1"  // "1".."5" or "meta"
+  };
+  saveState();
+}
+
+// ============ HELPERS ============
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+function isTopicDone(id) {
+  const s = state.scores[id];
+  if (!s.preference) return false;
+  for (const side of ["A", "B"]) {
+    for (const dim of DIMENSIONS) {
+      if (s[side][dim.key] === null) return false;
+    }
+  }
+  return true;
+}
+
+function isMetaDone() {
+  const m = state.meta;
+  return m.consistency_A !== null && m.consistency_B !== null &&
+         m.distinctiveness !== null && m.overall_pref !== null;
+}
+
+// ============ RENDER ============
+function renderTabs() {
+  const tabs = document.getElementById("tabs");
+  tabs.innerHTML = "";
+  TOPICS.forEach(t => {
+    const div = document.createElement("div");
+    div.className = "tab" + (String(t.id) === state.currentView ? " active" : "") + (isTopicDone(t.id) ? " done" : "");
+    div.textContent = `${t.id}. ${t.title}`;
+    div.onclick = () => { state.currentView = String(t.id); saveState(); render(); window.scrollTo(0,0); };
+    tabs.appendChild(div);
+  });
+  const metaTab = document.createElement("div");
+  metaTab.className = "tab meta" + (state.currentView === "meta" ? " active" : "") + (isMetaDone() ? " done" : "");
+  metaTab.textContent = "📊 Meta（跨題）";
+  metaTab.onclick = () => { state.currentView = "meta"; saveState(); render(); window.scrollTo(0,0); };
+  tabs.appendChild(metaTab);
+}
+
+function renderProgress() {
+  const done = TOPICS.filter(t => isTopicDone(t.id)).length;
+  const metaTxt = isMetaDone() ? " + Meta ✓" : "";
+  document.getElementById("progress").textContent = `${done} / ${TOPICS.length} 完成${metaTxt}`;
+}
+
+function renderMain() {
+  if (state.currentView === "meta") return renderMeta();
+  const main = document.getElementById("main");
+  const topicId = parseInt(state.currentView, 10);
+  const topic = TOPICS.find(t => t.id === topicId);
+  const blind = state.blinding[topic.id];
+  const sideA = topic[blind.A];
+  const sideB = topic[blind.B];
+  const s = state.scores[topic.id];
+
+  // group dims
+  const groups = {};
+  DIMENSIONS.forEach(d => {
+    if (!groups[d.group]) groups[d.group] = [];
+    groups[d.group].push(d);
+  });
+
+  const groupBlocks = Object.entries(groups).map(([gname, dims]) => `
+    <div class="dim-section">
+      <div class="dim-section-title">${gname}</div>
+      <div class="dim-grid">
+        <div></div>
+        <div class="dim-header">📘 A</div>
+        <div class="dim-header">📙 B</div>
+        ${dims.map(dim => `
+          <div class="dim-name">${dim.name}<small>${dim.hint}</small></div>
+          <div class="likert">${renderLikert("A", dim.key, s.A[dim.key])}</div>
+          <div class="likert">${renderLikert("B", dim.key, s.B[dim.key])}</div>
+        `).join("")}
+      </div>
+    </div>
+  `).join("");
+
+  main.innerHTML = `
+    <div class="query">
+      <div class="query-label">Topic ${topic.id} — ${topic.title}</div>
+      <div class="query-text">「${topic.query}」</div>
+    </div>
+
+    <div class="outputs">
+      <div class="output side-A">
+        <div class="output-label"><span>📘 版本 A</span><span class="word-count">${sideA.wordCount} 字</span></div>
+        <div class="output-body">${escapeHtml(sideA.text)}</div>
+      </div>
+      <div class="output side-B">
+        <div class="output-label"><span>📙 版本 B</span><span class="word-count">${sideB.wordCount} 字</span></div>
+        <div class="output-body">${escapeHtml(sideB.text)}</div>
+      </div>
+    </div>
+
+    <div class="scoring">
+      <h3>評分（1 = 差，5 = 優）</h3>
+      ${groupBlocks}
+
+      <div class="section-block">
+        <div class="section-block-title">Recall test — 讀完一句話總結（測 persona 記憶點 / 抓不抓得住重點）</div>
+        <div class="twocol">
+          <div class="twocol-cell side-A">
+            <label>📘 A 留下什麼一句話 <small>不看上面，閉眼能想到什麼</small></label>
+            <textarea oninput="setRecall('A', this.value)" placeholder="例：食物是信號不是熱量，先試 211 看身體反應">${escapeHtml(s.A.recall)}</textarea>
+          </div>
+          <div class="twocol-cell side-B">
+            <label>📙 B 留下什麼一句話</label>
+            <textarea oninput="setRecall('B', this.value)" placeholder="例：BMI 不夠細，量腰圍身高比、做血糖檢查">${escapeHtml(s.B.recall)}</textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-block">
+        <div class="section-block-title">場景配對 — 這個 output 適合哪個通路？（multi-select）</div>
+        <div class="twocol">
+          <div class="twocol-cell side-A">
+            <label>📘 A 適合通路</label>
+            <div class="chips">${SCENARIOS.map(sc => renderChip("scenario", "A", "scenarios", sc, s.A.scenarios.includes(sc.key))).join("")}</div>
+          </div>
+          <div class="twocol-cell side-B">
+            <label>📙 B 適合通路</label>
+            <div class="chips">${SCENARIOS.map(sc => renderChip("scenario", "B", "scenarios", sc, s.B.scenarios.includes(sc.key))).join("")}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-block">
+        <div class="section-block-title">問題 flag</div>
+        <div class="twocol">
+          <div class="twocol-cell side-A">
+            <label>📘 A 問題（多選）</label>
+            <div class="chips">${FLAGS.map(f => renderChip("flag", "A", "flags", f, s.A.flags.includes(f.key))).join("")}</div>
+          </div>
+          <div class="twocol-cell side-B">
+            <label>📙 B 問題（多選）</label>
+            <div class="chips">${FLAGS.map(f => renderChip("flag", "B", "flags", f, s.B.flags.includes(f.key))).join("")}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="preference">
+        <div class="preference-label">整體偏好</div>
+        <div class="pref-options">
+          ${["A", "tie", "B"].map(p => `
+            <label>
+              <input type="radio" name="pref" value="${p}" ${s.preference === p ? "checked" : ""} onchange="setPref('${p}')">
+              <span class="opt">${p === "A" ? "📘 A 比較好" : p === "tie" ? "平手 / 各有優缺" : "📙 B 比較好"}</span>
+            </label>
+          `).join("")}
+        </div>
+      </div>
+
+      <div class="comment-section">
+        <label>Comment <small>（為什麼好/不好？要 v4.1 改什麼？— frown corpus 的原料）</small></label>
+        <textarea class="comment-box" oninput="setComment(this.value)" placeholder="例：A 開頭太散漫直接給結論比較好 / B 太教條像在念稿 / 兩者都漏了 XX disclaimer ...">${escapeHtml(s.comment)}</textarea>
+      </div>
+
+      <div class="nav-buttons">
+        <button onclick="prevView()">← 上一題</button>
+        <button class="primary" onclick="nextView()">下一題 →</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderMeta() {
+  const main = document.getElementById("main");
+  const m = state.meta;
+  main.innerHTML = `
+    <div class="meta-panel">
+      <h2>📊 Meta 評分（5 題都評完後再做）</h2>
+      <p class="lead">這幾題不看單一 output，看 5 題整體的後設訊號。是 v4.1 spec 該往哪走的關鍵。</p>
+
+      <div class="dim-section">
+        <div class="dim-section-title">跨題 Persona 一致性</div>
+        <div class="dim-grid">
+          <div></div><div class="dim-header">📘 A</div><div class="dim-header">📙 B</div>
+          <div class="dim-name">5 題讀完，整體像同一人嗎？<small>低 = persona 漂移；高 = 同一個 Dr-Ben</small></div>
+          <div class="likert">${renderMetaLikert("consistency_A", m.consistency_A)}</div>
+          <div class="likert">${renderMetaLikert("consistency_B", m.consistency_B)}</div>
+        </div>
+      </div>
+
+      <div class="dim-section">
+        <div class="dim-section-title">A vs B 區辨度</div>
+        <div class="dim-grid" style="grid-template-columns: 1fr 1fr;">
+          <div class="dim-name">5 題看下來，A 跟 B 明顯是不同人嗎？<small>低 = 兩版差不多（spec 沒打出差異）；高 = 明顯區辨</small></div>
+          <div class="likert">${renderMetaLikert("distinctiveness", m.distinctiveness)}</div>
+        </div>
+      </div>
+
+      <div class="dim-section">
+        <div class="dim-section-title">整套偏好（5 題綜合）</div>
+        <div class="pref-options">
+          ${["A", "tie", "B"].map(p => `
+            <label>
+              <input type="radio" name="overall_pref" value="${p}" ${m.overall_pref === p ? "checked" : ""} onchange="setMetaField('overall_pref', '${p}')">
+              <span class="opt">${p === "A" ? "📘 整體選 A" : p === "tie" ? "平手" : "📙 整體選 B"}</span>
+            </label>
+          `).join("")}
+        </div>
+      </div>
+
+      <div class="comment-section">
+        <label>Meta comment <small>（看了 5 題整體，最強 / 最弱 / v4.1 該優先改什麼）</small></label>
+        <textarea class="comment-box" oninput="setMetaField('meta_comment', this.value)" placeholder="例：A 整體較自然但邊界處理弱；B 結構好但同理開場僵硬 → v4.1 應該保留 B 的結構但加 A 的開場流暢度">${escapeHtml(m.meta_comment)}</textarea>
+      </div>
+
+      <div class="nav-buttons">
+        <button onclick="prevView()">← 上一題</button>
+        <button class="primary" onclick="showSummary()">查看結果 →</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderLikert(side, dimKey, currentValue) {
+  return [1,2,3,4,5].map(v => `
+    <label>
+      <input type="radio" name="${side}-${dimKey}" value="${v}" ${currentValue === v ? "checked" : ""} onchange="setScore('${side}', '${dimKey}', ${v})">
+      <span class="opt">${v}</span>
+    </label>
+  `).join("");
+}
+
+function renderMetaLikert(field, currentValue) {
+  return [1,2,3,4,5].map(v => `
+    <label>
+      <input type="radio" name="meta-${field}" value="${v}" ${currentValue === v ? "checked" : ""} onchange="setMetaField('${field}', ${v})">
+      <span class="opt">${v}</span>
+    </label>
+  `).join("");
+}
+
+function renderChip(type, side, listField, item, checked) {
+  return `
+    <span class="chip ${type}">
+      <label>
+        <input type="checkbox" ${checked ? "checked" : ""} onchange="toggleListItem('${side}', '${listField}', '${item.key}')">
+        <span class="opt">${item.label}</span>
+      </label>
+    </span>
+  `;
+}
+
+// ============ EVENT HANDLERS ============
+function setScore(side, dimKey, v) {
+  state.scores[parseInt(state.currentView,10)][side][dimKey] = v;
+  saveState(); renderTabs(); renderProgress();
+}
+
+function setPref(p) {
+  state.scores[parseInt(state.currentView,10)].preference = p;
+  saveState(); renderTabs(); renderProgress();
+}
+
+function setRecall(side, v) {
+  state.scores[parseInt(state.currentView,10)][side].recall = v;
+  saveState();
+}
+
+function toggleListItem(side, listField, key) {
+  const arr = state.scores[parseInt(state.currentView,10)][side][listField];
+  const i = arr.indexOf(key);
+  if (i >= 0) arr.splice(i,1); else arr.push(key);
+  saveState();
+}
+
+function setComment(v) {
+  state.scores[parseInt(state.currentView,10)].comment = v;
+  saveState();
+}
+
+function setMetaField(field, v) {
+  state.meta[field] = v;
+  saveState(); renderTabs(); renderProgress();
+}
+
+function prevView() {
+  if (state.currentView === "meta") { state.currentView = "5"; }
+  else {
+    const id = parseInt(state.currentView,10);
+    if (id > 1) state.currentView = String(id - 1);
+  }
+  saveState(); render(); window.scrollTo(0,0);
+}
+
+function nextView() {
+  if (state.currentView === "meta") { showSummary(); return; }
+  const id = parseInt(state.currentView,10);
+  if (id < TOPICS.length) state.currentView = String(id + 1);
+  else state.currentView = "meta";
+  saveState(); render(); window.scrollTo(0,0);
+}
+
+function resetAll() {
+  if (!confirm("確定要清除所有評分？這會重新隨機 A/B 配對。")) return;
+  localStorage.removeItem(STORAGE_KEY);
+  state = {
+    version: 2,
+    rater: document.getElementById("rater").value,
+    started: new Date().toISOString(),
+    blinding: initBlinding(),
+    scores: initScores(),
+    meta: initMeta(),
+    currentView: "1"
+  };
+  saveState(); render();
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("rater").value = state.rater || "";
+  document.getElementById("rater").addEventListener("input", e => { state.rater = e.target.value; saveState(); });
+});
+
+// ============ SUMMARY ============
+function avg(arr) {
+  const filt = arr.filter(x => x !== null);
+  if (!filt.length) return null;
+  return filt.reduce((a,b) => a+b, 0) / filt.length;
+}
+
+function showSummary() {
+  const modal = document.getElementById("summary-modal");
+  const body = document.getElementById("summary-body");
+
+  const rows = TOPICS.map(t => {
+    const blind = state.blinding[t.id];
+    const s = state.scores[t.id];
+    const avgA = avg(DIMENSIONS.map(d => s.A[d.key]));
+    const avgB = avg(DIMENSIONS.map(d => s.B[d.key]));
+    const prefMap = { A: blind.A, B: blind.B, tie: "tie" };
+    const prefUnblinded = s.preference ? prefMap[s.preference] : "—";
+    return `<tr>
+      <td>${t.id}. ${t.title}</td>
+      <td>A=<strong>${blind.A}</strong> · B=<strong>${blind.B}</strong></td>
+      <td>${avgA !== null ? avgA.toFixed(2) : "—"}</td>
+      <td>${avgB !== null ? avgB.toFixed(2) : "—"}</td>
+      <td><strong>${prefUnblinded}</strong></td>
+    </tr>`;
+  }).join("");
+
+  const v4Pref = TOPICS.filter(t => {
+    const s = state.scores[t.id];
+    if (!s.preference || s.preference === "tie") return false;
+    return state.blinding[t.id][s.preference] === "v4";
+  }).length;
+  const v3Pref = TOPICS.filter(t => {
+    const s = state.scores[t.id];
+    if (!s.preference || s.preference === "tie") return false;
+    return state.blinding[t.id][s.preference] === "v3";
+  }).length;
+  const ties = TOPICS.filter(t => state.scores[t.id].preference === "tie").length;
+
+  // Per-dimension averages across all topics by version
+  const dimAvgRows = DIMENSIONS.map(d => {
+    const v3Scores = [], v4Scores = [];
+    TOPICS.forEach(t => {
+      const blind = state.blinding[t.id];
+      const s = state.scores[t.id];
+      const aVal = s.A[d.key], bVal = s.B[d.key];
+      if (blind.A === "v3") { if (aVal!==null) v3Scores.push(aVal); if (bVal!==null) v4Scores.push(bVal); }
+      else { if (aVal!==null) v4Scores.push(aVal); if (bVal!==null) v3Scores.push(bVal); }
+    });
+    const v3Avg = avg(v3Scores), v4Avg = avg(v4Scores);
+    return `<tr>
+      <td>${d.name}<br><small style="color:var(--muted);">${d.group}</small></td>
+      <td>${v3Avg !== null ? v3Avg.toFixed(2) : "—"}</td>
+      <td>${v4Avg !== null ? v4Avg.toFixed(2) : "—"}</td>
+      <td>${(v3Avg !== null && v4Avg !== null) ? (v4Avg - v3Avg >= 0 ? "+" : "") + (v4Avg - v3Avg).toFixed(2) : "—"}</td>
+    </tr>`;
+  }).join("");
+
+  // Flag tallies by version
+  const flagTally = { v3: {}, v4: {} };
+  FLAGS.forEach(f => { flagTally.v3[f.key] = 0; flagTally.v4[f.key] = 0; });
+  TOPICS.forEach(t => {
+    const blind = state.blinding[t.id];
+    const s = state.scores[t.id];
+    s.A.flags.forEach(fk => flagTally[blind.A][fk]++);
+    s.B.flags.forEach(fk => flagTally[blind.B][fk]++);
+  });
+  const flagRows = FLAGS.map(f => `
+    <tr><td>${f.label}</td><td>${flagTally.v3[f.key]}</td><td>${flagTally.v4[f.key]}</td></tr>
+  `).join("");
+
+  // Scenario tallies
+  const scenTally = { v3: {}, v4: {} };
+  SCENARIOS.forEach(sc => { scenTally.v3[sc.key] = 0; scenTally.v4[sc.key] = 0; });
+  TOPICS.forEach(t => {
+    const blind = state.blinding[t.id];
+    const s = state.scores[t.id];
+    s.A.scenarios.forEach(k => scenTally[blind.A][k]++);
+    s.B.scenarios.forEach(k => scenTally[blind.B][k]++);
+  });
+  const scenRows = SCENARIOS.map(sc => `
+    <tr><td>${sc.label}</td><td>${scenTally.v3[sc.key]}</td><td>${scenTally.v4[sc.key]}</td></tr>
+  `).join("");
+
+  const m = state.meta;
+
+  body.innerHTML = `
+    <div style="background: var(--warn-soft); border: 1px solid var(--warn); padding: 12px 16px; border-radius: 4px; margin-bottom: 16px;">
+      <strong>📤 回傳方式</strong><br>
+      點下方「下載 JSON」存檔 → 透過 Telegram / Email / Slack 傳給 Karen<br>
+      <small style="color: var(--muted);">（Email: kevenkmupsy@gmail.com · 評分資料目前只在你瀏覽器，不會自動上傳）</small>
+    </div>
+    <p><strong>評分者</strong>：${escapeHtml(state.rater || "（未填）")} ·
+       <strong>整體偏好</strong>：v4 勝 ${v4Pref} · v3 勝 ${v3Pref} · 平手 ${ties}</p>
+
+    <h3>各題總平均 + 偏好（unblind）</h3>
+    <table>
+      <thead><tr><th>Topic</th><th>Unblind</th><th>A 平均</th><th>B 平均</th><th>偏好</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+
+    <h3 style="margin-top:24px;">維度平均（v3 vs v4，跨 5 題）</h3>
+    <table>
+      <thead><tr><th>維度</th><th>v3</th><th>v4</th><th>Δ (v4 - v3)</th></tr></thead>
+      <tbody>${dimAvgRows}</tbody>
+    </table>
+
+    <h3 style="margin-top:24px;">Flag 累計（次數）</h3>
+    <table>
+      <thead><tr><th>Flag</th><th>v3</th><th>v4</th></tr></thead>
+      <tbody>${flagRows}</tbody>
+    </table>
+
+    <h3 style="margin-top:24px;">場景配對累計（次數）</h3>
+    <table>
+      <thead><tr><th>場景</th><th>v3</th><th>v4</th></tr></thead>
+      <tbody>${scenRows}</tbody>
+    </table>
+
+    <h3 style="margin-top:24px;">Meta（跨題後設）</h3>
+    <p>跨題一致性：A=<strong>${m.consistency_A ?? "—"}</strong> / B=<strong>${m.consistency_B ?? "—"}</strong>
+       · A vs B 區辨度：<strong>${m.distinctiveness ?? "—"}</strong>
+       · 整套偏好：<strong>${m.overall_pref ? (m.overall_pref === "tie" ? "tie" : state.blinding[1][m.overall_pref] + "?（注意：以 Topic 1 blinding 為參考；JSON 內含每題對應）") : "—"}</strong></p>
+    ${m.meta_comment ? `<p><em>${escapeHtml(m.meta_comment)}</em></p>` : ""}
+
+    <h3 style="margin-top:24px;">每題 Recall + Comment（frown 原料）</h3>
+    ${TOPICS.map(t => {
+      const s = state.scores[t.id];
+      const blind = state.blinding[t.id];
+      const hasAny = s.A.recall || s.B.recall || s.comment;
+      if (!hasAny) return "";
+      return `<div style="margin: 12px 0; padding: 10px; background: var(--bg); border-radius: 4px;">
+        <strong>T${t.id}. ${t.title}</strong>（A=${blind.A}, B=${blind.B}）
+        ${s.A.recall ? `<div>📘 A recall：${escapeHtml(s.A.recall)}</div>` : ""}
+        ${s.B.recall ? `<div>📙 B recall：${escapeHtml(s.B.recall)}</div>` : ""}
+        ${s.comment ? `<div>💬 ${escapeHtml(s.comment)}</div>` : ""}
+      </div>`;
+    }).join("") || "<p style='color:var(--muted);'>（無 recall / comment）</p>"}
+
+    <h3 style="margin-top:24px;">Raw JSON（unblinded）</h3>
+    <pre>${escapeHtml(JSON.stringify(buildExport(), null, 2))}</pre>
+  `;
+  modal.classList.remove("hidden");
+}
+
+function hideSummary() {
+  document.getElementById("summary-modal").classList.add("hidden");
+}
+
+function buildExport() {
+  return {
+    version: 2,
+    rater: state.rater,
+    started: state.started,
+    exported: new Date().toISOString(),
+    topics: TOPICS.map(t => {
+      const blind = state.blinding[t.id];
+      const s = state.scores[t.id];
+      const sideToVersion = side => ({
+        version: blind[side],
+        scores: Object.fromEntries(DIMENSIONS.map(d => [d.key, s[side][d.key]])),
+        flags: s[side].flags,
+        recall: s[side].recall,
+        scenarios: s[side].scenarios
+      });
+      return {
+        id: t.id,
+        title: t.title,
+        query: t.query,
+        A_was: blind.A,
+        B_was: blind.B,
+        v3: sideToVersion(blind.A === "v3" ? "A" : "B"),
+        v4: sideToVersion(blind.A === "v4" ? "A" : "B"),
+        preference_blinded: s.preference,
+        preference_version: s.preference ? (s.preference === "tie" ? "tie" : blind[s.preference]) : null,
+        comment: s.comment
+      };
+    }),
+    meta: state.meta
+  };
+}
+
+function downloadJSON() {
+  const data = JSON.stringify(buildExport(), null, 2);
+  const blob = new Blob([data], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `dr-ben-eval-${state.rater || "anon"}-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function copyJSON() {
+  navigator.clipboard.writeText(JSON.stringify(buildExport(), null, 2));
+  alert("已複製到剪貼簿");
+}
+
+function render() {
+  renderTabs();
+  renderProgress();
+  renderMain();
+}
+
+render();
+</script>
+</body>
+</html>

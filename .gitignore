@@ -1,3 +1,5 @@
 .claude_review_state.json
 .env
 .DS_Store
+_local-data/
+*.pdf
