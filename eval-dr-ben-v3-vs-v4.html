@@ -259,6 +259,22 @@
     border-bottom: 1px solid var(--border); font-size: 13px;
   }
   .summary-modal th { background: var(--accent-soft); font-weight: 600; }
+  .summary-submit-bar {
+    position: sticky; bottom: 0;
+    margin: 24px -24px 0; padding: 14px 24px;
+    background: var(--accent-soft);
+    border-top: 1px solid var(--accent);
+    box-shadow: 0 -4px 12px rgba(0,0,0,0.06);
+    z-index: 4;
+  }
+  .summary-submit-bar button {
+    padding: 10px 18px; background: var(--accent); color: white;
+    border: none; border-radius: 4px; font-size: 14px; font-weight: 600;
+    cursor: pointer;
+  }
+  .summary-submit-bar button:disabled {
+    opacity: 0.5; cursor: not-allowed;
+  }
   .summary-modal-actions {
     margin-top: 16px; display: flex; gap: 10px; justify-content: flex-end;
   }
@@ -297,6 +313,13 @@
     <div class="summary-close-x" onclick="hideSummary()" title="關閉 (Esc)">×</div>
     <h2 style="margin-top:0;">評分結果 + Unblind</h2>
     <div id="summary-body"></div>
+    <div class="summary-submit-bar">
+      <strong>📤 提交評分</strong>
+      <div style="margin: 8px 0;">
+        <button id="submit-btn" onclick="submitToKaren()">提交結果</button>
+      </div>
+      <div id="submit-status" style="font-size: 13px; color: var(--muted);">點上方按鈕一鍵送出 · 失敗的話可改用下方下載 JSON 手動傳</div>
+    </div>
     <div class="summary-modal-actions">
       <button onclick="downloadJSON()">下載 JSON</button>
       <button onclick="copyJSON()">複製 JSON</button>
@@ -907,19 +930,9 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("rater").addEventListener("input", e => {
     state.rater = e.target.value;
     saveState();
-    const btn = document.getElementById("submit-btn");
-    const st = document.getElementById("submit-status");
-    if (btn && st) {
-      const empty = !state.rater || !state.rater.trim();
-      btn.disabled = empty;
-      btn.style.opacity = empty ? "0.5" : "1";
-      btn.style.cursor = empty ? "not-allowed" : "pointer";
-      st.innerHTML = empty
-        ? "⚠️ 請先在頂部填寫「評分者」名字，再回來提交"
-        : "點上方按鈕一鍵送出 · 失敗的話可改用下方下載 JSON 手動傳";
-      st.style.color = empty ? "var(--warn, #c00)" : "var(--muted)";
-    }
+    updateSubmitBarState();
   });
+  updateSubmitBarState();
 });
 
 document.addEventListener("keydown", e => {
@@ -1064,16 +1077,21 @@ function showSummary() {
 
     <h3 style="margin-top:24px;">Raw JSON（unblinded）</h3>
     <pre>${escapeHtml(JSON.stringify(buildExport(), null, 2))}</pre>
-
-    <div style="background: var(--accent-soft); border: 1px solid var(--accent); padding: 14px 16px; border-radius: 4px; margin-top: 24px;">
-      <strong>📤 提交評分</strong><br>
-      <div style="margin: 10px 0;">
-        <button id="submit-btn" onclick="submitToKaren()" ${!state.rater || !state.rater.trim() ? "disabled" : ""} style="padding: 10px 18px; background: var(--accent); color: white; border: none; border-radius: 4px; font-size: 14px; font-weight: 600; cursor: pointer;${!state.rater || !state.rater.trim() ? " opacity: 0.5; cursor: not-allowed;" : ""}">提交結果</button>
-      </div>
-      <div id="submit-status" style="font-size: 13px; color: ${!state.rater || !state.rater.trim() ? "var(--warn, #c00)" : "var(--muted)"};">${!state.rater || !state.rater.trim() ? "⚠️ 請先在頂部填寫「評分者」名字，再回來提交" : "點上方按鈕一鍵送出 · 失敗的話可改用下方下載 JSON 手動傳"}</div>
-    </div>
   `;
+  updateSubmitBarState();
   modal.classList.remove("hidden");
+}
+
+function updateSubmitBarState() {
+  const btn = document.getElementById("submit-btn");
+  const st = document.getElementById("submit-status");
+  if (!btn || !st) return;
+  const empty = !state.rater || !state.rater.trim();
+  btn.disabled = empty;
+  st.innerHTML = empty
+    ? "⚠️ 請先在頂部填寫「評分者」名字，再回來提交"
+    : "點上方按鈕一鍵送出 · 失敗的話可改用下方下載 JSON 手動傳";
+  st.style.color = empty ? "var(--warn, #c00)" : "var(--muted)";
 }
 
 function hideSummary() {
