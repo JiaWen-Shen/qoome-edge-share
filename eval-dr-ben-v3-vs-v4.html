@@ -279,8 +279,8 @@
     <div class="meta">A/B 隨機盲標 · 7 維 + recall + scenario + meta · 完成後點「查看結果」→「🚀 自動提交」</div>
   </div>
   <div class="controls">
-    <label class="meta">評分者：
-      <input type="text" id="rater" placeholder="Karen / Iven" style="width: 100px;">
+    <label class="meta">評分者 <span style="color: var(--warn, #c00);">*</span>：
+      <input type="text" id="rater" placeholder="Karen / Iven" style="width: 100px;" required>
     </label>
     <span class="meta" id="progress">0 / 5 完成</span>
     <button class="secondary" onclick="resetAll()">重設</button>
@@ -904,7 +904,22 @@ function resetAll() {
 
 document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("rater").value = state.rater || "";
-  document.getElementById("rater").addEventListener("input", e => { state.rater = e.target.value; saveState(); });
+  document.getElementById("rater").addEventListener("input", e => {
+    state.rater = e.target.value;
+    saveState();
+    const btn = document.getElementById("submit-btn");
+    const st = document.getElementById("submit-status");
+    if (btn && st) {
+      const empty = !state.rater || !state.rater.trim();
+      btn.disabled = empty;
+      btn.style.opacity = empty ? "0.5" : "1";
+      btn.style.cursor = empty ? "not-allowed" : "pointer";
+      st.innerHTML = empty
+        ? "⚠️ 請先在頂部填寫「評分者」名字，再回來提交"
+        : "點上方按鈕一鍵送出 · 失敗的話可改用下方下載 JSON 手動傳";
+      st.style.color = empty ? "var(--warn, #c00)" : "var(--muted)";
+    }
+  });
 });
 
 document.addEventListener("keydown", e => {
@@ -1000,13 +1015,6 @@ function showSummary() {
   const m = state.meta;
 
   body.innerHTML = `
-    <div style="background: var(--accent-soft); border: 1px solid var(--accent); padding: 14px 16px; border-radius: 4px; margin-bottom: 16px;">
-      <strong>📤 提交評分</strong><br>
-      <div style="margin: 10px 0;">
-        <button id="submit-btn" onclick="submitToKaren()" style="padding: 10px 18px; background: var(--accent); color: white; border: none; border-radius: 4px; font-size: 14px; font-weight: 600; cursor: pointer;">🚀 自動提交給 Karen</button>
-      </div>
-      <div id="submit-status" style="font-size: 13px; color: var(--muted);">點上方按鈕一鍵送出 · 失敗的話可改用下方下載 JSON 手動傳</div>
-    </div>
     <p><strong>評分者</strong>：${escapeHtml(state.rater || "（未填）")} ·
        <strong>整體偏好</strong>：v4 勝 ${v4Pref} · v3 勝 ${v3Pref} · 平手 ${ties}</p>
 
@@ -1056,6 +1064,14 @@ function showSummary() {
 
     <h3 style="margin-top:24px;">Raw JSON（unblinded）</h3>
     <pre>${escapeHtml(JSON.stringify(buildExport(), null, 2))}</pre>
+
+    <div style="background: var(--accent-soft); border: 1px solid var(--accent); padding: 14px 16px; border-radius: 4px; margin-top: 24px;">
+      <strong>📤 提交評分</strong><br>
+      <div style="margin: 10px 0;">
+        <button id="submit-btn" onclick="submitToKaren()" ${!state.rater || !state.rater.trim() ? "disabled" : ""} style="padding: 10px 18px; background: var(--accent); color: white; border: none; border-radius: 4px; font-size: 14px; font-weight: 600; cursor: pointer;${!state.rater || !state.rater.trim() ? " opacity: 0.5; cursor: not-allowed;" : ""}">提交結果</button>
+      </div>
+      <div id="submit-status" style="font-size: 13px; color: ${!state.rater || !state.rater.trim() ? "var(--warn, #c00)" : "var(--muted)"};">${!state.rater || !state.rater.trim() ? "⚠️ 請先在頂部填寫「評分者」名字，再回來提交" : "點上方按鈕一鍵送出 · 失敗的話可改用下方下載 JSON 手動傳"}</div>
+    </div>
   `;
   modal.classList.remove("hidden");
 }
